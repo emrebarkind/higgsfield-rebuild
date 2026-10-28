@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useStudio } from "@/src/lib/useStudio";
-import type { OutAspect } from "@/src/lib/moves";
+import { NOT_SAVING, useStudio } from "@/src/lib/useStudio";
+import { usesFocus, type OutAspect } from "@/src/lib/moves";
 import { FrameInput } from "./FrameInput";
 import { MoveStrip } from "./MoveStrip";
 import { ParamsPanel } from "./ParamsPanel";
@@ -101,12 +101,17 @@ export function Studio() {
             aspect={s.aspect}
             playing={previewPlaying}
             onTogglePlay={() => setPreviewPlay(!previewPlaying)}
-            onFocus={(f) => s.setParam("focus", f)}
+            onFocus={usesFocus(s.moveId) ? (f) => s.setParam("focus", f) : undefined}
           />
         </div>
         <p className="mt-2 text-xs text-muted">
           Dailies moves a real camera through your image. Subjects stay still — it’s the camera that moves.
         </p>
+        {s.storageError && (
+          <p role="alert" className="mt-1 text-xs text-paper">
+            {NOT_SAVING}
+          </p>
+        )}
 
         <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <div className="mx-auto flex max-w-[1440px] items-center gap-3">
@@ -116,13 +121,7 @@ export function Studio() {
               aria-disabled={rollDisabled || s.rolling || undefined}
               className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
-              {s.rolling ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-tally" aria-hidden="true" /> Rolling…
-                </span>
-              ) : (
-                s.rollState.label
-              )}
+              {s.rollState.label}
             </button>
             <p className="text-xs text-muted" aria-live="polite">
               {!s.depth && s.frame ? "Waiting for depth…" : s.rollState.newShot && s.shot ? "You changed the frame, move or settings, so this starts a new shot." : ""}
@@ -157,6 +156,7 @@ export function Studio() {
                   {take.circled && (
                     <PrintPanel
                       key={`print-${take.id}`}
+                      takeId={take.id}
                       recipe={{ frame: s.shotFrame, depth: s.shotDepth, moveId: s.shot.moveId, params: take.params, seed: take.seed }}
                       shot={s.shot.number}
                       take={take.number}
@@ -171,7 +171,7 @@ export function Studio() {
         <SampleReel
           onUse={(sample) => {
             s.pickSample(sample);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
           }}
         />
       </section>

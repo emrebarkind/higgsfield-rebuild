@@ -179,7 +179,7 @@ function FocusLayer(props: {
     >
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-paper/80"
+        className={`pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-paper/80 ${interactive ? "" : "hidden"}`}
         style={{ left: `${left}%`, top: `${top}%` }}
       >
         <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper" />
@@ -208,7 +208,7 @@ function DepthState({ status, error, onRetry, hasFrame }: { status: DepthStatus 
         : "Reading depth…";
   return (
     <p role="status" className="rounded bg-bg/90 px-3 py-2 font-mono text-xs uppercase tracking-wider">
-      <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-paper align-middle" aria-hidden="true" />
+      <span className="mr-2 inline-block h-2 w-2 motion-safe:animate-pulse rounded-full bg-paper align-middle" aria-hidden="true" />
       {text}
     </p>
   );

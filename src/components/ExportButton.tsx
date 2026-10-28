@@ -74,7 +74,7 @@ export function ExportButton(props: { recipe: TakeRecipe; shot: number; take: nu
       {running ? (
         <>
           <span role="status" className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-tally" aria-hidden="true" />
+            <span className="h-2 w-2 motion-safe:animate-pulse rounded-full bg-tally" aria-hidden="true" />
             Rendering {status.done} / {status.total} frames
           </span>
           <button type="button" onClick={() => abort.current?.abort()} className="text-xs text-muted underline hover:text-paper">

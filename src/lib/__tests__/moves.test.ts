@@ -5,6 +5,7 @@ import {
   ease,
   fitFrame,
   poseAt,
+  usesFocus,
   type CameraPose,
   type Easing,
   type MoveId,
@@ -95,6 +96,49 @@ describe('poseAt', () => {
       expect(Math.abs(pose.y - base.y)).toBeLessThanOrEqual(0.01 + 1e-12);
       expect(Math.abs(pose.yawDeg)).toBeLessThanOrEqual(0.3 + 1e-12);
       expect(Math.abs(pose.pitchDeg)).toBeLessThanOrEqual(0.3 + 1e-12);
+    }
+  });
+});
+
+describe('focus point', () => {
+  const off = { ...p, handheld: 0, strength: 1, focus: { x: 0.8, y: 0.2 } };
+  // half-height of the view on the z = 0 plane, from the camera pose
+  const halfH = (pose: CameraPose) => pose.z * Math.tan((pose.fovDeg * Math.PI) / 360);
+
+  test('push-in travels toward the focus point and keeps the view inside the frame', () => {
+    const end = poseAt('push-in', off, 1, 0, 1);
+    const fx = (0.8 - 0.5) * 2;
+    const fy = (0.5 - 0.2) * 2;
+    expect(end.x).toBeGreaterThan(0);
+    expect(end.y).toBeGreaterThan(0);
+    // the camera sits on the line from the base camera to the focus point
+    expect(end.x / fx).toBeCloseTo(end.y / fy, 9);
+    expect(end.y + halfH(end)).toBeLessThanOrEqual(1 + 1e-9);
+    expect(end.x + halfH(end)).toBeLessThanOrEqual(1 + 1e-9);
+  });
+
+  test('pull-back starts on the focus point and ends on the base pose', () => {
+    expect(poseAt('pull-back', off, 0, 0, 1).x).toBeCloseTo(poseAt('push-in', off, 1, 0, 1).x, 9);
+    expectPoseClose(poseAt('pull-back', off, 1, 0, 1), poseAt('static', off, 0));
+  });
+
+  test('crash-zoom zooms about the focus point: it stays put on screen and the view stays inside the frame', () => {
+    const fy = (0.5 - 0.2) * 2;
+    for (const t of [0.3, 1]) {
+      const pose = poseAt('crash-zoom', off, t, 0, 1);
+      const h = halfH(pose);
+      // focus point's screen position (in half-heights from centre) is unchanged from the base view
+      expect((fy - pose.y) / h).toBeCloseTo(fy / 1, 9);
+      expect(pose.y + h).toBeLessThanOrEqual(1 + 1e-9);
+    }
+  });
+
+  test('usesFocus names exactly the moves that react to it', () => {
+    const users = IDS.filter((id) => usesFocus(id)).sort();
+    expect(users).toEqual(['crane-up', 'crash-zoom', 'orbit', 'pull-back', 'push-in']);
+    for (const id of IDS) {
+      const moved = JSON.stringify(poseAt(id, off, 0.5, 0, 1)) !== JSON.stringify(poseAt(id, { ...off, focus: { x: 0.5, y: 0.5 } }, 0.5, 0, 1));
+      expect(moved, id).toBe(usesFocus(id));
     }
   });
 });

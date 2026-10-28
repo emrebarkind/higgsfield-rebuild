@@ -114,6 +114,13 @@ function shake(seed: number, channel: number, timeS: number): number {
 
 // --- poses ---
 
+const FOCUS_MOVES: ReadonlySet<MoveId> = new Set(['push-in', 'pull-back', 'crash-zoom', 'orbit', 'crane-up']);
+
+/** Whether the focus point changes this move (static, pans and dolly zoom ignore it). */
+export function usesFocus(id: MoveId): boolean {
+  return FOCUS_MOVES.has(id);
+}
+
 export function poseAt(id: MoveId, p: MoveParams, t: number, seed = 0, frameAspect = 1): CameraPose {
   const fov0 = baseFovDeg(p.lensMm);
   const d = baseDistance(p.lensMm);
@@ -129,11 +136,15 @@ export function poseAt(id: MoveId, p: MoveParams, t: number, seed = 0, frameAspe
     case 'static':
       break;
     case 'push-in':
-      pose.z = d * (1 - 0.45 * s * e);
+    case 'pull-back': {
+      // along the line from the base camera to the focus point; the view on
+      // the z = 0 plane stays inside the frame because |focus| <= 1
+      const u = 0.45 * s * (id === 'push-in' ? e : 1 - e);
+      pose.x = focusX * u;
+      pose.y = focusY * u;
+      pose.z = d * (1 - u);
       break;
-    case 'pull-back':
-      pose.z = d * (1 - 0.45 * s * (1 - e));
-      break;
+    }
     case 'pan-left':
     case 'pan-right': {
       const dir = id === 'pan-left' ? 1 : -1;
@@ -162,9 +173,14 @@ export function poseAt(id: MoveId, p: MoveParams, t: number, seed = 0, frameAspe
       pose.z = d * (1 - 0.5 * s * e);
       pose.fovDeg = (2 * Math.atan(1 / pose.z)) / RAD;
       break;
-    case 'crash-zoom':
-      pose.fovDeg = zoomedFov(fov0, 1 + 1.5 * s * e);
+    case 'crash-zoom': {
+      // zoom about the focus point: shift so it holds its place on screen
+      const zoom = 1 + 1.5 * s * e;
+      pose.fovDeg = zoomedFov(fov0, zoom);
+      pose.x = focusX * (1 - 1 / zoom);
+      pose.y = focusY * (1 - 1 / zoom);
       break;
+    }
   }
 
   if (p.handheld > 0) {

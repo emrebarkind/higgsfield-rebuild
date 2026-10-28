@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { STRENGTH_CAPS, type Easing, type LensMm, type MoveId, type MoveParams } from "@/src/lib/moves";
+import { MOVES, STRENGTH_CAPS, usesFocus, type Easing, type LensMm, type MoveId, type MoveParams } from "@/src/lib/moves";
 
 const EASINGS: { id: Easing; label: string }[] = [
   { id: "linear", label: "Linear" },
@@ -45,20 +45,26 @@ export function ParamsPanel({ moveId, params, setParam }: { moveId: MoveId; para
         display={params.handheld === 0 ? "Locked off" : `${Math.round(params.handheld * 100)}%`}
         onChange={(v) => setParam("handheld", v)}
       />
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted">Focus point</span>
-        <span className="flex items-center gap-3">
-          <span className="font-mono text-xs">
-            {params.focus.x.toFixed(2)}, {params.focus.y.toFixed(2)}
-          </span>
-          {(params.focus.x !== 0.5 || params.focus.y !== 0.5) && (
-            <button type="button" className="text-xs text-muted underline hover:text-paper" onClick={() => setParam("focus", { x: 0.5, y: 0.5 })}>
-              Centre
-            </button>
-          )}
-        </span>
-      </div>
-      <p className="-mt-2 text-xs text-muted">Click the preview (or focus it and use the arrow keys) to set what the camera aims at.</p>
+      {usesFocus(moveId) ? (
+        <>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted">Focus point</span>
+            <span className="flex items-center gap-3">
+              <span className="font-mono text-xs">
+                {params.focus.x.toFixed(2)}, {params.focus.y.toFixed(2)}
+              </span>
+              {(params.focus.x !== 0.5 || params.focus.y !== 0.5) && (
+                <button type="button" className="text-xs text-muted underline hover:text-paper" onClick={() => setParam("focus", { x: 0.5, y: 0.5 })}>
+                  Centre
+                </button>
+              )}
+            </span>
+          </div>
+          <p className="-mt-2 text-xs text-muted">Click the preview (or focus it and use the arrow keys) to set what the camera aims at.</p>
+        </>
+      ) : (
+        <p className="text-xs text-muted">{MOVES[moveId].label} frames the whole image, so it has no focus point.</p>
+      )}
     </fieldset>
   );
 }

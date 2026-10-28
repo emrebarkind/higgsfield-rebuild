@@ -10,6 +10,9 @@ import * as db from './store';
 import { loadDepthAsset } from './depth/asset';
 import { SAMPLES, type Sample } from './samples';
 
+/** Said wherever work is listed or made, once storage has refused us. */
+export const NOT_SAVING = 'This browser isn’t saving your dailies — export what you want to keep.';
+
 type Draft = { frameId: string; moveId: MoveId; base: MoveParams };
 
 export interface RollState {
@@ -50,6 +53,8 @@ export interface StudioState {
   focusedTake: string | null;
   rolling: boolean;
   nextShotNumber: number;
+  /** This browser refused a read or write: work is not being saved. */
+  storageError: boolean;
 }
 
 const initial: StudioState = {
@@ -69,6 +74,7 @@ const initial: StudioState = {
   focusedTake: null,
   rolling: false,
   nextShotNumber: 1,
+  storageError: false,
 };
 
 let state = initial;
@@ -90,9 +96,13 @@ function seedBaseFor(id: string): number {
   return (h >>> 0) % 100000;
 }
 
-/** Writes to IndexedDB never block or break the studio (private windows may refuse them). */
+/** Writes to IndexedDB never block or break the studio (private windows may refuse them), but a refusal is shown. */
 function persist(p: Promise<unknown>) {
-  p.catch(() => {});
+  p.catch(storageFailed);
+}
+
+function storageFailed() {
+  if (!state.storageError) set({ storageError: true });
 }
 
 function persistDraft() {
@@ -177,7 +187,8 @@ async function hydrate() {
       }
     }
   } catch {
-    // No storage here (private window, blocked): start fresh.
+    // No storage here (private window, blocked): start fresh, and say so.
+    storageFailed();
   }
   return false;
 }
@@ -294,10 +305,12 @@ export const studio = {
   },
   /** From the Dailies page: bring a stored shot back into the studio. */
   async openShot(id: string) {
-    const entry = (await db.listShots()).find((e) => e.shot.id === id);
+    const all = await db.listShots();
+    const entry = all.find((e) => e.shot.id === id);
     const frame = entry && (await db.getFrame(entry.shot.frameId));
     if (!entry || !frame) return false;
     hydrated = true;
+    set({ nextShotNumber: Math.max(state.nextShotNumber, ...all.map((e) => e.shot.number + 1)) });
     await showShot(entry, frame);
     return true;
   },

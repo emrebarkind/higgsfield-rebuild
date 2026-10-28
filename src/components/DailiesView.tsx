@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { MOVES } from "@/src/lib/moves";
 import type { Shot, Take } from "@/src/lib/takes";
 import * as db from "@/src/lib/store";
-import { studio } from "@/src/lib/useStudio";
+import { NOT_SAVING, studio, useStudio } from "@/src/lib/useStudio";
 
 type Entry = { shot: Shot; takes: Take[] };
 
@@ -18,6 +18,8 @@ export function DailiesView() {
   const [confirming, setConfirming] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [readFailed, setReadFailed] = useState(false);
+  const { storageError } = useStudio();
 
   useEffect(() => {
     let gone = false;
@@ -37,7 +39,11 @@ export function DailiesView() {
         }
         setThumbs(next);
       })
-      .catch(() => !gone && setEntries([]));
+      .catch(() => {
+        if (gone) return;
+        setEntries([]);
+        setReadFailed(true);
+      });
     return () => {
       gone = true;
       urls.forEach((u) => URL.revokeObjectURL(u));
@@ -124,7 +130,11 @@ export function DailiesView() {
       )}
 
       <div className="mt-10 border-t border-line pt-4 text-sm text-muted">
-        <p>Stored on this device. Nothing is uploaded; clearing your browser’s site data removes it too.</p>
+        {storageError || readFailed ? (
+          <p role="alert" className="text-paper">{NOT_SAVING}</p>
+        ) : (
+          <p>Stored on this device. Nothing is uploaded; clearing your browser’s site data removes it too.</p>
+        )}
         {entries && entries.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-3">
             {confirming ? (

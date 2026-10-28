@@ -66,6 +66,18 @@ describe('needsNewShot', () => {
   });
 });
 
+describe('needsNewShot and the focus point', () => {
+  test('moving the focus only starts a new shot for moves that use it', () => {
+    const f = { ...base, focus: { x: 0.2, y: 0.7 } };
+    const dolly = newShot('frame-a', 'dolly-zoom', base, 1);
+    expect(needsNewShot(dolly, { frameId: 'frame-a', moveId: 'dolly-zoom', base: f })).toBe(false);
+    const pan = newShot('frame-a', 'pan-left', base, 1);
+    expect(needsNewShot(pan, { frameId: 'frame-a', moveId: 'pan-left', base: f })).toBe(false);
+    const push = newShot('frame-a', 'push-in', base, 1);
+    expect(needsNewShot(push, { frameId: 'frame-a', moveId: 'push-in', base: f })).toBe(true);
+  });
+});
+
 describe('rollTakes', () => {
   test('numbers takes 1..3 then 4..6, then refuses past MAX_TAKES', () => {
     expect(MAX_TAKES).toBe(6);
