@@ -8,6 +8,7 @@ import { MoveStrip } from "./MoveStrip";
 import { ParamsPanel } from "./ParamsPanel";
 import { Preview } from "./Preview";
 import { TakesGrid } from "./TakesGrid";
+import { ExportButton } from "./ExportButton";
 import { usePrefersReducedMotion, useSyncedClock } from "./TakePlayer";
 
 const ASPECTS: OutAspect[] = ["16:9", "9:16", "1:1"];
@@ -132,6 +133,17 @@ export function Studio() {
             onFocus={s.focus}
             onCircle={s.circle}
             onNudge={s.nudge}
+            focusedActions={(take) =>
+              s.shot && s.shotFrame && s.shotDepth ? (
+                <ExportButton
+                  key={`${take.id}-${s.aspect}`}
+                  recipe={{ frame: s.shotFrame, depth: s.shotDepth, moveId: s.shot.moveId, params: take.params, seed: take.seed }}
+                  shot={s.shot.number}
+                  take={take.number}
+                  aspect={s.aspect}
+                />
+              ) : null
+            }
           />
         </div>
       </section>
