@@ -10,6 +10,7 @@ import { Preview } from "./Preview";
 import { TakesGrid } from "./TakesGrid";
 import { ExportButton } from "./ExportButton";
 import { GenerateFrame } from "./GenerateFrame";
+import { PrintPanel } from "./PrintPanel";
 import { usePrefersReducedMotion, useSyncedClock } from "./TakePlayer";
 
 const ASPECTS: OutAspect[] = ["16:9", "9:16", "1:1"];
@@ -136,13 +137,24 @@ export function Studio() {
             onNudge={s.nudge}
             focusedActions={(take) =>
               s.shot && s.shotFrame && s.shotDepth ? (
-                <ExportButton
-                  key={`${take.id}-${s.aspect}`}
-                  recipe={{ frame: s.shotFrame, depth: s.shotDepth, moveId: s.shot.moveId, params: take.params, seed: take.seed }}
-                  shot={s.shot.number}
-                  take={take.number}
-                  aspect={s.aspect}
-                />
+                <>
+                  <ExportButton
+                    key={`${take.id}-${s.aspect}`}
+                    recipe={{ frame: s.shotFrame, depth: s.shotDepth, moveId: s.shot.moveId, params: take.params, seed: take.seed }}
+                    shot={s.shot.number}
+                    take={take.number}
+                    aspect={s.aspect}
+                  />
+                  {take.circled && (
+                    <PrintPanel
+                      key={`print-${take.id}`}
+                      recipe={{ frame: s.shotFrame, depth: s.shotDepth, moveId: s.shot.moveId, params: take.params, seed: take.seed }}
+                      shot={s.shot.number}
+                      take={take.number}
+                      aspect={s.aspect}
+                    />
+                  )}
+                </>
               ) : null
             }
           />

@@ -45,9 +45,13 @@ const connectGradio = async (space: string): Promise<GenClient> => {
   return (await Client.connect(space, { events: ['data', 'status'] })) as unknown as GenClient;
 };
 
+/** Drop ZeroGPU's "authenticate with a token" advice: Dailies stays keyless. */
+export function cleanGpuMessage(message: string): string {
+  return message.replace(/\s*Authenticate with a Hugging Face token[\s\S]*$/, '');
+}
+
 function fromMessage(message: string | null | undefined): FrameGenError {
-  // Drop the "authenticate with a token" advice: Dailies stays keyless.
-  const m = (message ?? 'The free GPU service failed.').replace(/\s*Authenticate with a Hugging Face token.*$/s, '');
+  const m = cleanGpuMessage(message ?? 'The free GPU service failed.');
   return /quota|exceeded|limit/i.test(m) ? new FrameGenError('rate-limited', m) : new FrameGenError('upstream', m);
 }
 
