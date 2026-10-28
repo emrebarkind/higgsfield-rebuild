@@ -17,3 +17,12 @@ next-env.d.ts
 
 # os
 .DS_Store
+
+# scaffold extras
+/coverage
+.pnp
+.pnp.*
+*.pem
+npm-debug.log*
+.superpowers/
+.vercel

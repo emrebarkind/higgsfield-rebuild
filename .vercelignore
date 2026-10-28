@@ -1,0 +1,7 @@
+.superpowers
+.agent-logs
+.claude
+recon
+docs
+*.md
+!README.md

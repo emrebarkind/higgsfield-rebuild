@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Edit-bay tokens (spec §8). Graphite, never #000; tally red only for
+   rolling/rendering; amber only for circled takes. No gradients. */
+:root {
+  --bg: #1c1b19;
+  --panel: #252421;
+  --line: #3a3833;
+  --text: #f2efe8;
+  --muted: #a8a399;
+  --tally: #e5402f;
+  --circle: #f0a630;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-paper: var(--text);
+  --color-muted: var(--muted);
+  --color-tally: var(--tally);
+  --color-circle: var(--circle);
+}
+
+/* next/font sets --nf-* on <html>; these are the names the app uses. */
+@theme {
+  --font-display: var(--nf-display), "Arial Narrow", system-ui, sans-serif;
+  --font-ui: var(--nf-ui), system-ui, sans-serif;
+  --font-mono: var(--nf-mono), ui-monospace, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-ui);
+}
+
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
