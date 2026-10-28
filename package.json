@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@gradio/client": "^2.7.2",
     "@huggingface/transformers": "^4.3.2",
     "idb-keyval": "^6.3.0",
     "mp4-muxer": "^5.2.2",

@@ -81,3 +81,9 @@ export const STRENGTH_CAPS = {
 - Other live ZeroGPU candidates: `Lightricks/ltx-video-distilled` (`/image_to_video`), `multimodalart/wan2-1-fast`. Not timed.
 - CORS: the Space reflects the browser origin (`access-control-allow-origin: https://higgsfield-rebuild-cyan.vercel.app`, credentials allowed), and the `queue/join` preflight passes. A full run from a real browser page is still unproven; Task 11 tries it first and cuts the feature if it fails.
 - Anonymous ZeroGPU quota per IP is small. A visitor may get a single print, or none; the UI says so.
+
+## Addendum (Task 10, 13:50 UTC) — Pollinations from a real browser page
+
+- A real `fetch` from the app page (Chromium, `http://localhost:3000`) to `image.pollinations.ai` answers **403 `{"error":"Missing Turnstile token"}`**, with or without `referrer=`. The CORS check in §4 used curl with an `Origin` header, which is not what a browser sends. Pollinations gates browser traffic behind Cloudflare Turnstile; that is a bot check, so Dailies does not try to get around it.
+- With the server path already ruled out (§4), frame generation moves to **FLUX.1 [schnell] on Hugging Face ZeroGPU** via `@gradio/client` in the browser: connect 1.1 s, a 1344×768 frame in 5.0 s, result readable with CORS, `events: ['data','status']` needed to see queue position and errors.
+- Anonymous ZeroGPU quota: each call requests 90 s of GPU; after two frames from one IP the Space answered "You have exceeded your ZeroGPU quota (90s requested vs. 0s left)". The quota is per IP and shared by every ZeroGPU Space, including the one Task 11 would use.

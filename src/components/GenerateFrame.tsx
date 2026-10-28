@@ -1,0 +1,88 @@
+"use client";
+
+import { useState } from "react";
+import type { OutAspect } from "@/src/lib/moves";
+import { FrameGenError, generateFrame, MAX_PROMPT, validatePrompt } from "@/src/lib/framegen";
+import { createRateLimiter } from "@/src/lib/ratelimit";
+
+// Repeated clicks would spend the visitor's own free GPU quota; a light brake.
+const limiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+
+type Status =
+  | { kind: "idle" }
+  | { kind: "developing"; queuePosition: number | null }
+  | { kind: "error"; message: string; detail?: string };
+
+export function GenerateFrame({ aspect, onFrame }: { aspect: OutAspect; onFrame: (blob: Blob, prompt: string) => Promise<void> | void }) {
+  const [prompt, setPrompt] = useState("");
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  const go = async () => {
+    const invalid = validatePrompt(prompt);
+    if (invalid) return setStatus({ kind: "error", message: invalid });
+    const slot = limiter.hit("me");
+    if (!slot.ok) return setStatus({ kind: "error", message: `That’s a lot of frames in a minute — try again in ${slot.retryAfterS} s.` });
+    setStatus({ kind: "developing", queuePosition: null });
+    try {
+      const blob = await generateFrame(prompt, aspect, Math.floor(Math.random() * 1_000_000), (s) =>
+        setStatus({ kind: "developing", queuePosition: s.queuePosition }),
+      );
+      await onFrame(blob, prompt.trim());
+      setStatus({ kind: "idle" });
+    } catch (err) {
+      const e = err instanceof FrameGenError ? err : new FrameGenError("upstream", String(err));
+      setStatus(
+        e.kind === "rate-limited"
+          ? { kind: "error", message: "The free GPU quota for your connection is used up for now — upload an image or try later.", detail: e.message }
+          : { kind: "error", message: "Couldn’t generate that frame — try again or upload one.", detail: e.message },
+      );
+    }
+  };
+
+  const developing = status.kind === "developing";
+  return (
+    <form
+      className="mt-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void go();
+      }}
+    >
+      <label htmlFor="frame-prompt" className="mb-1.5 block text-xs text-muted">
+        Or describe a frame and we’ll generate it
+      </label>
+      <textarea
+        id="frame-prompt"
+        rows={2}
+        maxLength={MAX_PROMPT + 50}
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            void go();
+          }
+        }}
+        placeholder="A lighthouse on a cliff at dusk, 35mm film"
+        className="w-full resize-none rounded border border-line bg-panel px-2.5 py-2 text-sm placeholder:text-muted/70"
+      />
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <button type="submit" disabled={developing} className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg disabled:opacity-50">
+          {developing ? "Developing frame…" : "Generate frame"}
+        </button>
+        <span className="text-xs text-muted">Free · FLUX.1 schnell on a community GPU · {aspect}</span>
+      </div>
+      {developing && status.queuePosition ? (
+        <p role="status" className="mt-1.5 font-mono text-xs uppercase tracking-wider text-muted">
+          In the queue · position {status.queuePosition}
+        </p>
+      ) : null}
+      {status.kind === "error" && (
+        <p role="alert" className="mt-1.5 text-sm">
+          {status.message}
+          {status.detail && <span className="block text-xs text-muted">{status.detail}</span>}
+        </p>
+      )}
+    </form>
+  );
+}

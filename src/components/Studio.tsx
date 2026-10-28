@@ -9,6 +9,7 @@ import { ParamsPanel } from "./ParamsPanel";
 import { Preview } from "./Preview";
 import { TakesGrid } from "./TakesGrid";
 import { ExportButton } from "./ExportButton";
+import { GenerateFrame } from "./GenerateFrame";
 import { usePrefersReducedMotion, useSyncedClock } from "./TakePlayer";
 
 const ASPECTS: OutAspect[] = ["16:9", "9:16", "1:1"];
@@ -149,7 +150,9 @@ export function Studio() {
       </section>
 
       <aside className="order-2 mt-8 space-y-6 lg:order-1 lg:mt-0" aria-label="Frame, move and settings">
-        <FrameInput frame={s.frame} busy={s.frameBusy} error={s.frameError} onFile={(f) => s.setFrame(f)} onSample={(x) => s.setFrame(x)} />
+        <FrameInput frame={s.frame} busy={s.frameBusy} error={s.frameError} onFile={(f) => s.setFrame(f)} onSample={(x) => s.setFrame(x)}>
+          <GenerateFrame aspect={s.aspect} onFrame={(blob, prompt) => s.setFrame(blob, "generated", prompt)} />
+        </FrameInput>
         <MoveStrip value={s.moveId} onChange={s.setMove} />
         <ParamsPanel moveId={s.moveId} params={s.base} setParam={s.setParam} />
       </aside>
