@@ -88,6 +88,20 @@ const isTurnStart = (e) =>
 
 const isHumanPrompt = (e) => isTurnStart(e) && (originKind(e) === 'human' || (!e.origin && e.turnOrigin === 'human'));
 
+// A background-task or peer message delivered mid-turn (after a tool result) is not a new turn.
+// It only starts one when the agent had already finished, i.e. its last block was text.
+const turnEndedBefore = (entries, i) => {
+  for (let j = i - 1; j >= 0; j--) {
+    const p = entries[j];
+    if (p.isSidechain || (p.type !== 'user' && p.type !== 'assistant')) continue;
+    if (p.type === 'user' && p.isMeta && !p.toolUseResult) continue;
+    if (p.type !== 'assistant') return false;
+    const b = blocks(p);
+    return b.length > 0 && b[b.length - 1].type === 'text';
+  }
+  return false;
+};
+
 // The prompt as typed: the app prepends <system-reminder> blocks, which are not the user's words.
 const promptText = (e) =>
   blocks(e)
@@ -153,7 +167,9 @@ const header = ({ sid, model, total, first, last }) =>
 // Rebuild the whole session log from the transcript. Deterministic, so earlier entries never change.
 const render = (sid, transcriptPath, { lastResponse } = {}) => {
   const entries = readTranscript(transcriptPath);
-  const starts = entries.map((e, i) => (isTurnStart(e) ? i : -1)).filter((i) => i >= 0);
+  const starts = entries
+    .map((e, i) => (isTurnStart(e) && (isHumanPrompt(e) || turnEndedBefore(entries, i)) ? i : -1))
+    .filter((i) => i >= 0);
   if (!starts.some((i) => isHumanPrompt(entries[i]))) return null;
 
   const fallbackModel = lastModel(entries) || loadState(sid).model || 'unknown';

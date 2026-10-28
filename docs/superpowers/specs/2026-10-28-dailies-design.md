@@ -29,11 +29,16 @@ The product claim, stated plainly: *fewer decisions before you start, no surpris
 1. **Frame.** Start from an uploaded image (JPG/PNG/WebP, ≤ 10 MB, validated in the browser and on the server) or one of 4 sample frames we generated ourselves. Changing the frame keeps the move and the prompt.
 2. **Move.** A library of 8 camera moves: Static, Push in, Pull back, Pan left, Pan right, Orbit, Crane up, Crash zoom. Each move is shown as a small **motion diagram** (top-down camera path plus start and end framing) and, where we have one, a short sample take. Choosing a move writes a visible, editable direction into the prompt (Higgsfield does the same in Cinema Studio, screen 14). Moves are directions to the model, not guaranteed geometry, and the UI says so once in plain words.
 3. **Roll.** Rolling a shot creates draft takes: 2 by default, 1–3 allowed, 5s at 480p. The roll button shows the exact cost and the typical wait *before* you press it. The typical wait is the median of our last real takes for that model, labelled "typical", never a countdown.
-4. **Review (the dailies).** All takes of a shot play side by side, synced. Keyboard: Space plays and pauses all, J/K/L scrub, 1–3 focus a take, C circles it. A circled take is the one you keep.
+   - **Shot vs. take (our call):** a shot is its frame + move + prompt, frozen at its first roll. Rolling again with the same inputs adds takes to the same shot, up to 4 takes per shot. Change any input and the button changes to "Roll new shot", which creates SHOT n+1. The earlier shot stays in Dailies untouched. Takes inside one shot differ only in seed, and in kind (draft or print).
+4. **Review (the dailies).** All takes of a shot (up to 4) play side by side, synced. Keyboard: Space plays and pauses all, J/K/L scrub, 1–4 focus a take, C circles it. A circled take is the one you keep.
 5. **Print.** Printing a circled take renders it in HD with the same frame, move, prompt and seed. The UI is honest that a print is a new render, close to the draft but not pixel-identical. The original draft stays.
 6. **Durable jobs.** A take is a job with states `queued → running → succeeded | failed`, plus `checking` when we temporarily can't reach the provider (shown as "Reconnecting…", never as failed). Submitting is idempotent: a double click makes one job. Refreshing or closing the tab loses nothing; on return, every pending take resumes from the server. No fake progress percentages.
 7. **Dailies page (history).** Every shot and take for this visitor, newest first, with a filter for circled takes. It survives refreshes and return visits for 30 days. Any finished take can be downloaded. "Another take" reuses the shot's frame, move and prompt; old takes are never overwritten.
-8. **Visitor pass (no sign-in).** Each visitor gets a signed, httpOnly cookie id and a daily allowance (proposal: 6 draft takes + 1 print per day). The remaining allowance is always visible. A failed take returns its allowance automatically. Server-side limits sit behind it: a per-IP cap, one concurrent roll per visitor, and a global daily spend cap. When the pass is used up, the visitor can still browse everything, including the sample reel.
+8. **Visitor pass (no sign-in).** Each visitor gets a signed, httpOnly cookie id and a daily allowance.
+   - **Counted in real money (our call):** one counter, about 50¢ of footage per day. That covers two rolls of 2 drafts plus one print. The UI shows "35¢ left today", the same unit as every price on the page. Visitors may spend it however they like.
+   - The remaining allowance is always visible. A failed take returns its cents automatically.
+   - Server-side limits sit behind it: a per-IP cap at 3× the visitor allowance (graders may share an office IP), one concurrent roll per visitor, and a global daily spend cap set from the confirmed budget.
+   - When the pass is used up, the visitor can still browse everything, including the sample reel.
 9. **Sample reel.** A few shots we generated beforehand, each labelled "Sample — shot earlier". Opening them costs nothing and never looks like a live call.
 10. **Cost honesty.** A server-owned price table, checked against the AI Gateway price list, drives every cost the UI shows. Every take records what it actually cost.
 
@@ -176,7 +181,8 @@ State transitions are compare-and-set: a take leaves a terminal state never, and
 1. **AI Gateway image-to-video:** confirm start and status with `seedance-v1.0-pro-fast` at 480p from a Blob-hosted frame. Measure latency and record the actual cost.
 2. **Print fidelity:** test whether the same model at 1080p with the same seed stays close to the 480p draft. If it doesn't, print with Kling and label it "re-shot in HD".
 3. **Kling `cameraControl`:** test whether it is accepted on 2.5 Turbo through the Gateway. If not, moves stay prompt-only.
-4. **Money:** live generation needs AI Gateway credits. Until the budget is confirmed, the build runs on the test adapter and live calls stay off.
+4. **Real people in the frame (our call):** graders will likely upload a selfie first. Spike one real-person photo through the draft model. If Seedance refuses it, the draft model becomes `spacexai/grok-imagine-video-1.5-lite` at 480p (about 10¢ per 5s). The price table and allowance follow from the measured prices, not from this document.
+5. **Money:** live generation needs AI Gateway credits; the free tier covers only a subset of models, and video is expected to be paid. Until the budget is confirmed, the build runs on the test adapter and live calls stay off. Blob on the Hobby plan locks for 30 days if its limits are exceeded, so the global cap also bounds stored media.
 
 ## 12. Left to the builder
 
