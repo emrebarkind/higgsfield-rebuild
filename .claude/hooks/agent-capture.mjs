@@ -84,9 +84,9 @@ const originKind = (e) => e.origin?.kind || null;
 const isTurnStart = (e) =>
   e.type === 'user' && !e.isSidechain && !e.toolUseResult && !e.isCompactSummary &&
   (originKind(e) === 'human' || ['task-notification', 'peer'].includes(originKind(e)) ||
-    (!e.origin && e.turnOrigin === 'human'));
+    (!e.origin && ['human', 'sdk'].includes(e.turnOrigin)));
 
-const isHumanPrompt = (e) => isTurnStart(e) && (originKind(e) === 'human' || (!e.origin && e.turnOrigin === 'human'));
+const isHumanPrompt = (e) => isTurnStart(e) && (originKind(e) === 'human' || (!e.origin && ['human', 'sdk'].includes(e.turnOrigin)));
 
 // A background-task or peer message delivered mid-turn (after a tool result) is not a new turn.
 // It only starts one when the agent had already finished, i.e. its last block was text.
