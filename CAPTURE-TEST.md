@@ -22,9 +22,9 @@ Status: **PASS** — the canary was captured live in two fresh sessions, each wi
 | Session | File | How it was opened | Entries |
 |---|---|---|---|
 | A `68e59cf9` | [`.agent-logs/2026-10-28_12-53-11_68e59cf9-2d16-4663-af54-03c80021cf90.md`](.agent-logs/2026-10-28_12-53-11_68e59cf9-2d16-4663-af54-03c80021cf90.md) | By hand in the desktop app; the canary typed as the first message. This session then went on to build the app, so the same file keeps growing. | PROMPT 1, RESPONSE 1 |
-| B `be8487be` | [`.agent-logs/2026-10-28_12-52-32_be8487be-d1d5-42bf-b888-ea2700494fb3.md`](.agent-logs/2026-10-28_12-52-32_be8487be-d1d5-42bf-b888-ea2700494fb3.md) | Started from another session (`8aec9f7e`) through the app's "new session" tool, with the canary as its first message. | PROMPT 1, RESPONSE 1 |
+| B `dc868088` | [`.agent-logs/2026-10-28_12-57-20_dc868088-bd0e-4752-a624-e6543786f161.md`](.agent-logs/2026-10-28_12-57-20_dc868088-bd0e-4752-a624-e6543786f161.md) | By hand in the desktop app, a second independent session; the canary typed as the only message. | PROMPT 1, RESPONSE 1 |
 
-Session `8aec9f7e` ([log](.agent-logs/2026-10-28_12-52-08_8aec9f7e-655c-42ba-8693-88fb7fbce0fc.md)), the one that started B, was captured too.
+Two other sessions were captured on the way there and are kept, not deleted (see §5): `be8487be` ([log](.agent-logs/2026-10-28_12-52-32_be8487be-d1d5-42bf-b888-ea2700494fb3.md)) and `8aec9f7e` ([log](.agent-logs/2026-10-28_12-52-08_8aec9f7e-655c-42ba-8693-88fb7fbce0fc.md)).
 
 ## 4. Canary entries (raw)
 
@@ -53,35 +53,32 @@ Two things in the log header you may want to fix before the real assignment:
 I also noticed a sibling session, `be8487be`, logged the same prompt with the side-session wrapper text included. That's expected for a session started from another one, but it means its first log entry isn't your exact words.
 ```
 
-**Session B** (`be8487be`):
+**Session B** (`dc868088`):
 
 ```text
-[LOG_ENTRY type=PROMPT num=1 session=be8487be]
-timestamp: 2026-10-28T12:52:32.155Z
+[LOG_ENTRY type=PROMPT num=1 session=dc868088]
+timestamp: 2026-10-28T12:57:20.098Z
 model: claude-opus-5-5
 
-Background (from the session that started this one):
-The user asked for a new session in this folder whose first message is exactly the prompt text, sent verbatim. No further context or instructions come with it; respond to it as if the user had typed it directly.
-
-Task:
 CAPTURE TEST — 8x assignment, Emre Dugenci
 
-Shared notes folder for this group of sessions (outside the repo; read siblings' notes there, leave hand-over notes or large findings there instead of pasting them into messages): /Users/ebd/Library/Application Support/Claude/side-session-notes/local_6a5dd07b-1b17-4967-a1f3-5828d32c854a
 
-
-[LOG_ENTRY type=RESPONSE num=1 session=be8487be]
-timestamp: 2026-10-28T12:53:14.585Z
+[LOG_ENTRY type=RESPONSE num=1 session=dc868088]
+timestamp: 2026-10-28T12:57:41.805Z
 model: claude-opus-5-5
 
-I got the capture test (CAPTURE TEST — 8x assignment, Emre Dugenci). The prompt was saved to the log automatically. I didn't change or commit anything.
+The capture hook saved your prompt in this session (`dc868088`).
 
-- **Log file:** `.agent-logs/2026-10-28_12-52-32_be8487be-d1d5-42bf-b888-ea2700494fb3.md`, logged as PROMPT 1 at 12:52:32 UTC.
-- **This reply:** the end-of-turn hook will add it to the same file as RESPONSE 1 when this turn finishes. I can't check that from inside the turn.
-- **Model field:** the prompt entry shows `model: unknown`, because the session-start step saved no model for this session. When the end-of-turn hook rewrites the log from the transcript, it should change to `claude-opus-5-5`. That isn't confirmed yet.
-- **Extra text in the prompt:** the logged prompt also contains the background text the app adds when one session starts another, not only the canary line. If the test needs a prompt with nothing but the canary line, open a session by hand and type the line yourself.
+- **Log file:** [.agent-logs/2026-10-28_12-57-20_dc868088-bd0e-4752-a624-e6543786f161.md](.agent-logs/2026-10-28_12-57-20_dc868088-bd0e-4752-a624-e6543786f161.md), entry `PROMPT num=1`, timestamp `2026-10-28T12:57:20.131Z`.
+- **Text:** "CAPTURE TEST — 8x assignment, Emre Dugenci", exactly as you typed it. There's no extra text around it, so this is a clean hand-typed run like session A in [CAPTURE-TEST.md](CAPTURE-TEST.md).
+- **Errors:** the hook's error log is empty.
+- **`model: unknown`:** the entry and the file header say `model: unknown` for now. [CAPTURE-TEST.md](CAPTURE-TEST.md) records the same thing in both earlier test runs, where the `Stop` hook changed it to `claude-opus-5-5` when it rewrote the file at the end of the turn. It should happen here too, but I can't see it from inside this turn.
+- **This reply:** it should be added as `RESPONSE num=1` when the turn ends. I can't confirm that from here either. Open the file after this message to check both points.
+
+The log file is new and not committed yet. I left it that way.
 ```
 
-Session B's prompt is what that session actually received: the app wraps a message sent from one session to a new one in a "Background / Task" frame. The hook logged it as received, without cleaning it up. Session A is the clean, hand-typed canary.
+Both canaries are hand-typed, each in its own fresh session, each with a PROMPT and a RESPONSE in its own file. The hook fired on its own both times; nothing was run by hand.
 
 ## 5. What did not work first
 
@@ -90,3 +87,4 @@ Session B's prompt is what that session actually received: the app wraps a messa
 3. The first hook command used `$CLAUDE_PROJECT_DIR` only; it now falls back to the repo-relative path in case that variable is unset or stale.
 4. **`model: unknown` on the first prompt entry, fixed by the next re-render.** In both canary sessions the `SessionStart` step had not saved a model when the prompt arrived, so the prompt was first written with `model: unknown`. At the end of the turn the `Stop` hook rewrote the file from the transcript, which records the model, and the entry now reads `claude-opus-5-5`. The same rewrite takes the prompt's timestamp from the transcript, so it can differ from the first write by a few milliseconds (A: `…11.786Z` → `…11.758Z`). Both canary responses guessed at causes before the re-render ran; their wrong guesses stay in the logs as written.
 5. **The `author:` field is a constant** (`emrebarkind`, the GitHub handle) set in the script, not read from git or the OS.
+6. **A canary sent from another session is not a clean canary.** Session `8aec9f7e` was given the setup instructions as text and started a side session (`be8487be`) with the canary as its first message. The app wraps such a message in a "Background / Task" frame, and the hook logged it as received, so that prompt is not the user's exact words. Its response was also missing at first: the Stop re-render only counted prompts marked `human`, and the app marks these `sdk`. Fixed in `c25b586`; the response is now in its log. A second hand-typed canary (`dc868088`) replaced it as session B.
