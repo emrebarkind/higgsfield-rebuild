@@ -7,6 +7,7 @@ import { MAX_TAKES, needsNewShot, newShot, nudgeTake, rollTakes, type Shot, type
 import { prepareFrame, validateFile, type Frame } from './frame';
 import { estimateDepth, primeDepth, type DepthMap, type DepthStatus } from './depth/client';
 import * as db from './store';
+import { loadDepthAsset } from './depth/asset';
 import { SAMPLES, type Sample } from './samples';
 
 type Draft = { frameId: string; moveId: MoveId; base: MoveParams };
@@ -211,8 +212,18 @@ export const studio = {
           if (!r.ok) throw new Error('Could not load that sample.');
           return r.blob();
         })
-        .then((b) => prepareFrame(b, 'sample', input.prompt)),
+        .then((b) => prepareFrame(b, 'sample', input.prompt))
+        .then(async (frame) => {
+          // Pre-computed depth: the sample moves at once, without the model download.
+          await loadDepthAsset(input.depth).then((d) => primeDepth(frame.id, d), () => {});
+          return frame;
+        }),
     );
+  },
+  /** A sample with its preset move, from the reel. */
+  pickSample(sample: Sample) {
+    set({ moveId: sample.moveId, base: sample.params });
+    return studio.setFrame(sample);
   },
   /** Restore what this device had; on a first visit, a sample frame with its move already previewing. */
   ensureFrame() {

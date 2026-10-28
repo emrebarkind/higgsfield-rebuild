@@ -116,7 +116,6 @@ function FocusedTake(props: { shot: Shot; take: Take; canNudge: boolean; onNudge
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Slate shot={shot.number} take={take.number} moveId={shot.moveId} lensMm={take.params.lensMm} className="text-paper" />
         <div className="flex flex-wrap items-center gap-2">
-          {actions}
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -128,6 +127,7 @@ function FocusedTake(props: { shot: Shot; take: Take; canNudge: boolean; onNudge
           </button>
         </div>
       </div>
+      {actions && <div className="mt-3 flex flex-wrap items-center gap-3">{actions}</div>}
       {open && (
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <NudgeSlider label="Strength" min={0} max={cap} step={0.01} value={p.strength} show={`${Math.round((p.strength / cap) * 100)}%`} onChange={(v) => setP({ ...p, strength: v })} />

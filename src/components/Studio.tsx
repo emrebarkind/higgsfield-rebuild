@@ -11,15 +11,22 @@ import { TakesGrid } from "./TakesGrid";
 import { ExportButton } from "./ExportButton";
 import { GenerateFrame } from "./GenerateFrame";
 import { PrintPanel } from "./PrintPanel";
+import { SampleReel } from "./SampleReel";
 import { usePrefersReducedMotion, useSyncedClock } from "./TakePlayer";
 
 const ASPECTS: OutAspect[] = ["16:9", "9:16", "1:1"];
 const SCRUB_S = 1 / 3;
 
+const TEXT_INPUTS = new Set(["text", "search", "email", "number", "url", "tel", "password"]);
+/** Typing into a field: no review shortcuts at all. */
 function typingInto(el: EventTarget | null) {
   if (!(el instanceof HTMLElement)) return false;
-  const tag = el.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || el.isContentEditable;
+  if (el instanceof HTMLInputElement) return TEXT_INPUTS.has(el.type);
+  return el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable;
+}
+/** On a button, checkbox or link, Space belongs to that control. */
+function spaceBelongsTo(el: EventTarget | null) {
+  return el instanceof HTMLElement && el !== document.body && el.matches("button, a, input, [role=radio], [role=button], [tabindex]");
 }
 
 export function Studio() {
@@ -39,6 +46,7 @@ export function Studio() {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || typingInto(e.target) || s.takes.length === 0) return;
       const k = e.key.toLowerCase();
+      if (k === " " && spaceBelongsTo(e.target)) return;
       if (k === " " || k === "k") {
         e.preventDefault();
         setTakesPlay(!takesPlaying);
@@ -56,7 +64,8 @@ export function Studio() {
     return () => window.removeEventListener("keydown", onKey);
   }, [s, takesPlaying, loopS, setTime]);
 
-  const rollDisabled = s.rollState.disabled || s.rolling || !s.depth;
+  // Roll is only ever aria-disabled, never disabled, so keyboard focus isn't lost; the store ignores a press it can't take.
+  const rollDisabled = s.rollState.disabled || !s.depth;
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 pb-28 pt-6 sm:px-6 lg:grid lg:grid-cols-[minmax(300px,380px)_1fr] lg:gap-8 lg:pb-10">
       <section className="order-1 lg:order-2" aria-label="Preview and takes">
@@ -104,8 +113,8 @@ export function Studio() {
             <button
               type="button"
               onClick={() => s.roll(3)}
-              disabled={rollDisabled}
-              className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg disabled:cursor-not-allowed disabled:opacity-40"
+              aria-disabled={rollDisabled || s.rolling || undefined}
+              className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
               {s.rolling ? (
                 <span className="flex items-center gap-2">
@@ -159,6 +168,12 @@ export function Studio() {
             }
           />
         </div>
+        <SampleReel
+          onUse={(sample) => {
+            s.pickSample(sample);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
       </section>
 
       <aside className="order-2 mt-8 space-y-6 lg:order-1 lg:mt-0" aria-label="Frame, move and settings">

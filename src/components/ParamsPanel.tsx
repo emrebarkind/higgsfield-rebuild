@@ -58,7 +58,7 @@ export function ParamsPanel({ moveId, params, setParam }: { moveId: MoveId; para
           )}
         </span>
       </div>
-      <p className="-mt-2 text-xs text-muted">Click the preview to set what the camera aims at.</p>
+      <p className="-mt-2 text-xs text-muted">Click the preview (or focus it and use the arrow keys) to set what the camera aims at.</p>
     </fieldset>
   );
 }

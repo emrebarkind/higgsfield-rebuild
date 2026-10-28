@@ -1,9 +1,10 @@
 "use client";
 
-import { type MouseEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { fitFrame, type MoveId, type MoveParams, type OutAspect } from "@/src/lib/moves";
 import type { Frame } from "@/src/lib/frame";
 import type { DepthMap, DepthStatus } from "@/src/lib/depth/client";
+import { grayFromDepth } from "@/src/lib/depth/asset";
 import { ASPECT_CSS, TakePlayer } from "./TakePlayer";
 
 interface Props {
@@ -41,6 +42,8 @@ export function Preview(props: Props) {
   const { frame, depth, depthStatus, depthError, onRetryDepth, moveId, params, aspect, playing, onTogglePlay, onFocus } = props;
   const still = objectUrl(frame?.blob);
   const box = frame ? frameBox(frame, aspect) : null;
+  const [showDepth, setShowDepth] = useState(false);
+  const [showGuides, setShowGuides] = useState(false);
 
   const pickFocus = (e: MouseEvent<HTMLDivElement>) => {
     if (!onFocus || !box) return;
@@ -51,12 +54,23 @@ export function Preview(props: Props) {
     onFocus({ x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 });
   };
 
+  const STEP = 0.05;
+  const moveFocus = (e: KeyboardEvent<HTMLDivElement>) => {
+    const d = { ArrowLeft: [-STEP, 0], ArrowRight: [STEP, 0], ArrowUp: [0, -STEP], ArrowDown: [0, STEP] }[e.key];
+    if (!d || !onFocus) return;
+    e.preventDefault();
+    const clamp = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 100) / 100;
+    onFocus({ x: clamp(params.focus.x + d[0]), y: clamp(params.focus.y + d[1]) });
+  };
+
   const ready = frame && depth;
   return (
     <div className="relative w-full">
       {ready ? (
         <TakePlayer recipe={{ frame, depth, moveId, params, seed: 0 }} playing={playing} aspect={aspect} className="w-full">
-          <FocusLayer box={box!} focus={params.focus} onClick={pickFocus} interactive={!!onFocus} />
+          {showDepth && <DepthLayer box={box!} depth={depth} />}
+          {showGuides && <Guides />}
+          <FocusLayer box={box!} focus={params.focus} onClick={pickFocus} onKey={moveFocus} interactive={!!onFocus} />
         </TakePlayer>
       ) : (
         <div className="relative w-full overflow-hidden bg-[#0b0b0a]" style={{ aspectRatio: ASPECT_CSS[aspect] }}>
@@ -75,16 +89,71 @@ export function Preview(props: Props) {
         </div>
       )}
       {ready && (
-        <button
-          type="button"
-          onClick={onTogglePlay}
-          className="absolute bottom-3 left-3 rounded bg-bg/80 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-paper hover:bg-bg"
-          aria-label={playing ? "Pause preview" : "Play preview"}
-        >
-          {playing ? "Pause" : "Play"}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            className="absolute bottom-3 left-3 rounded bg-bg/80 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-paper hover:bg-bg"
+            aria-label={playing ? "Pause preview" : "Play preview"}
+          >
+            {playing ? "Pause" : "Play"}
+          </button>
+          <div className="absolute bottom-3 right-3 flex gap-1.5">
+            <Toggle on={showDepth} onClick={() => setShowDepth(!showDepth)} label="See the depth" />
+            <Toggle on={showGuides} onClick={() => setShowGuides(!showGuides)} label="Guides" />
+          </div>
+        </>
       )}
     </div>
+  );
+}
+
+function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={`rounded px-2.5 py-1.5 font-mono text-xs uppercase tracking-wider ${on ? "bg-paper text-bg" : "bg-bg/80 text-paper hover:bg-bg"}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+/** The depth map the camera moves through: white is near, black is far. */
+function DepthLayer({ box, depth }: { box: ReturnType<typeof frameBox>; depth: DepthMap }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    c.width = depth.width;
+    c.height = depth.height;
+    c.getContext("2d")!.putImageData(new ImageData(new Uint8ClampedArray(grayFromDepth(depth)), depth.width, depth.height), 0, 0);
+  }, [depth]);
+  return (
+    <>
+      <canvas
+        ref={ref}
+        aria-hidden="true"
+        className="pointer-events-none absolute opacity-90"
+        style={{ left: `${box.left * 100}%`, top: `${box.top * 100}%`, width: `${box.width * 100}%`, height: `${box.height * 100}%` }}
+      />
+      <span className="pointer-events-none absolute left-3 top-3 rounded bg-bg/80 px-2 py-1 font-mono text-[11px] uppercase tracking-wider">
+        Depth · white is near
+      </span>
+    </>
+  );
+}
+
+/** Action-safe (90%) and title-safe (80%) frames with a centre mark, over the output. */
+function Guides() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+      <rect x="5" y="5" width="90" height="90" fill="none" stroke="var(--text)" strokeOpacity="0.45" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+      <rect x="10" y="10" width="80" height="80" fill="none" stroke="var(--text)" strokeOpacity="0.3" strokeDasharray="2 2" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+      <path d="M48 50h4M50 48v4" stroke="var(--text)" strokeOpacity="0.6" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
@@ -92,15 +161,20 @@ function FocusLayer(props: {
   box: ReturnType<typeof frameBox>;
   focus: { x: number; y: number };
   onClick: (e: MouseEvent<HTMLDivElement>) => void;
+  onKey: (e: KeyboardEvent<HTMLDivElement>) => void;
   interactive: boolean;
 }) {
-  const { box, focus, onClick, interactive } = props;
+  const { box, focus, onClick, onKey, interactive } = props;
   const left = (box.left + focus.x * box.width) * 100;
   const top = (box.top + focus.y * box.height) * 100;
   return (
     <div
       className={`absolute inset-0 ${interactive ? "cursor-crosshair" : ""}`}
       onClick={onClick}
+      onKeyDown={interactive ? onKey : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      role={interactive ? "group" : undefined}
+      aria-label={interactive ? `Focus point ${focus.x.toFixed(2)}, ${focus.y.toFixed(2)}. Click, or use the arrow keys, to move it.` : undefined}
       title={interactive ? "Click to set the focus point" : undefined}
     >
       <span

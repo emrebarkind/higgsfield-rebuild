@@ -1,10 +1,13 @@
 import { MOVES, type MoveId, type MoveParams } from './moves';
 
 // Sample frames we generated with Pollinations (keyless) on 28 Oct 2026 and
-// committed under public/samples. Always shown with the label "Sample".
+// committed under public/samples, each with its depth map pre-computed by the
+// same model (`<id>.depth.png`) so samples move before the model downloads.
+// Always shown with the label "Sample".
 export interface Sample {
   id: string;
   src: string;
+  depth: string;
   prompt: string;
   moveId: MoveId;
   params: MoveParams;
@@ -13,6 +16,7 @@ export interface Sample {
 const sample = (id: string, prompt: string, moveId: MoveId, over: Partial<MoveParams> = {}): Sample => ({
   id,
   src: `/samples/${id}.jpg`,
+  depth: `/samples/${id}.depth.png`,
   prompt,
   moveId,
   params: { ...MOVES[moveId].defaults, ...over },
