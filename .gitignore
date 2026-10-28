@@ -1,0 +1,19 @@
+# deps / build
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# env / platform
+.env
+.env*.local
+.vercel/
+
+# local Claude Code state (the capture logs in .agent-logs/ are committed on purpose)
+.claude/settings.local.json
+.claude/hooks/.state/
+
+# os
+.DS_Store
