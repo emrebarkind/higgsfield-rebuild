@@ -1,11 +1,12 @@
 // Studio state: the draft (frame + move + params), the current shot and its
-// takes. Kept in a module-level store so it survives moving between Studio and
-// Moves; Task 9 persists it to IndexedDB.
+// takes. Kept in a module-level store so it survives moving between pages, and
+// mirrored to IndexedDB so a refresh or a return visit restores it.
 import { useSyncExternalStore } from 'react';
 import { MOVES, STRENGTH_CAPS, type MoveId, type MoveParams, type OutAspect } from './moves';
 import { MAX_TAKES, needsNewShot, newShot, nudgeTake, rollTakes, type Shot, type Take } from './takes';
 import { prepareFrame, validateFile, type Frame } from './frame';
-import { estimateDepth, type DepthMap, type DepthStatus } from './depth/client';
+import { estimateDepth, primeDepth, type DepthMap, type DepthStatus } from './depth/client';
+import * as db from './store';
 import { SAMPLES, type Sample } from './samples';
 
 type Draft = { frameId: string; moveId: MoveId; base: MoveParams };
@@ -88,18 +89,96 @@ function seedBaseFor(id: string): number {
   return (h >>> 0) % 100000;
 }
 
+/** Writes to IndexedDB never block or break the studio (private windows may refuse them). */
+function persist(p: Promise<unknown>) {
+  p.catch(() => {});
+}
+
+function persistDraft() {
+  if (!state.frame) return;
+  persist(db.saveDraft({ frameId: state.frame.id, moveId: state.moveId, base: state.base, aspect: state.aspect }));
+}
+
+/** Depth for a frame: from this device if we read it before, otherwise from the model. */
+async function depthOf(frame: Frame, onStatus: (s: DepthStatus) => void): Promise<DepthMap> {
+  const stored = await db.getDepth(frame.id).catch(() => undefined);
+  if (stored) {
+    primeDepth(frame.id, stored);
+    return stored;
+  }
+  const depth = await estimateDepth(frame, onStatus);
+  persist(db.saveDepth(frame.id, depth));
+  return depth;
+}
+
 function readDepth(frame: Frame) {
   set({ depth: null, depthError: null, depthStatus: null });
-  estimateDepth(frame, (s) => {
+  depthOf(frame, (s) => {
     if (state.frame?.id === frame.id) set({ depthStatus: s });
   }).then(
     (depth) => {
       if (state.frame?.id === frame.id) set({ depth, depthStatus: null });
+      if (state.shotFrame?.id === frame.id && !state.shotDepth) set({ shotDepth: depth });
     },
     (err: unknown) => {
       if (state.frame?.id === frame.id) set({ depthError: err instanceof Error ? err.message : String(err), depthStatus: null });
     },
   );
+}
+
+function readShotDepth(frame: Frame) {
+  depthOf(frame, () => {}).then(
+    (depth) => {
+      if (state.shotFrame?.id === frame.id) set({ shotDepth: depth });
+    },
+    () => {},
+  );
+}
+
+/** Make `entry` the current shot, with the draft pointed at it so Roll adds to it. */
+async function showShot(entry: { shot: Shot; takes: Take[] }, frame: Frame) {
+  const { shot, takes } = entry;
+  set({
+    shot,
+    takes,
+    shotFrame: frame,
+    shotDepth: null,
+    focusedTake: null,
+    frame,
+    moveId: shot.moveId,
+    base: shot.base,
+    frameError: null,
+  });
+  readDepth(frame);
+  persist(db.setCurrentShot(shot.id));
+  persistDraft();
+}
+
+let hydrated = false;
+async function hydrate() {
+  try {
+    const [draft, currentId, all] = await Promise.all([db.getDraft(), db.getCurrentShot(), db.listShots()]);
+    set({ nextShotNumber: Math.max(0, ...all.map((e) => e.shot.number)) + 1 });
+    const current = all.find((e) => e.shot.id === currentId);
+    if (current) {
+      const shotFrame = await db.getFrame(current.shot.frameId);
+      if (shotFrame) {
+        set({ shot: current.shot, takes: current.takes, shotFrame, shotDepth: null });
+        readShotDepth(shotFrame);
+      }
+    }
+    if (draft) {
+      const frame = await db.getFrame(draft.frameId);
+      if (frame) {
+        set({ frame, moveId: draft.moveId, base: draft.base, aspect: draft.aspect });
+        readDepth(frame);
+        return true;
+      }
+    }
+  } catch {
+    // No storage here (private window, blocked): start fresh.
+  }
+  return false;
 }
 
 async function loadFrame(next: Promise<Frame>) {
@@ -108,6 +187,8 @@ async function loadFrame(next: Promise<Frame>) {
     const frame = await next;
     set({ frame, frameBusy: false });
     readDepth(frame);
+    persist(db.saveFrame(frame));
+    persistDraft();
   } catch (err) {
     set({ frameBusy: false, frameError: err instanceof Error ? err.message : 'Could not open that image.' });
   }
@@ -133,13 +214,18 @@ export const studio = {
         .then((b) => prepareFrame(b, 'sample', input.prompt)),
     );
   },
-  /** First visit: a sample frame with its move already previewing. */
+  /** Restore what this device had; on a first visit, a sample frame with its move already previewing. */
   ensureFrame() {
-    if (!state.frame && !state.frameBusy) {
+    if (hydrated || state.frame || state.frameBusy) return;
+    hydrated = true;
+    set({ frameBusy: true });
+    hydrate().then((restored) => {
+      set({ frameBusy: false });
+      if (restored || state.frame) return;
       const s = SAMPLES[0];
       set({ moveId: s.moveId, base: s.params });
       studio.setFrame(s);
-    }
+    });
   },
   retryDepth() {
     if (state.frame) readDepth(state.frame);
@@ -147,13 +233,16 @@ export const studio = {
   setMove(id: MoveId) {
     const d = MOVES[id].defaults;
     set({ moveId: id, base: { ...d, lensMm: state.base.lensMm, focus: state.base.focus } });
+    persistDraft();
   },
   setParam<K extends keyof MoveParams>(k: K, v: MoveParams[K]) {
     const value = k === 'strength' ? (Math.min(v as number, STRENGTH_CAPS[state.moveId]) as MoveParams[K]) : v;
     set({ base: { ...state.base, [k]: value } });
+    persistDraft();
   },
   setAspect(aspect: OutAspect) {
     set({ aspect });
+    persistDraft();
   },
   roll(count = 3) {
     const { frame, depth, moveId, base } = state;
@@ -171,6 +260,8 @@ export const studio = {
     }
     const rolled = rollTakes(shot!, r.count, seedBaseFor(shot!.id));
     set({ ...patch, shot: rolled.shot, takes: [...takes, ...rolled.takes], rolling: true });
+    persist(db.saveShot(state.shot!, state.takes));
+    persist(db.setCurrentShot(state.shot!.id));
     setTimeout(() => {
       rollingNow = false;
       set({ rolling: false });
@@ -178,6 +269,7 @@ export const studio = {
   },
   circle(takeId: string) {
     set({ takes: state.takes.map((t) => (t.id === takeId ? { ...t, circled: !t.circled } : t)) });
+    if (state.shot) persist(db.saveShot(state.shot, state.takes));
   },
   focus(takeId: string | null) {
     set({ focusedTake: takeId });
@@ -187,6 +279,26 @@ export const studio = {
     if (!state.shot || !from || state.shot.takeIds.length >= MAX_TAKES) return;
     const r = nudgeTake(state.shot, from, params);
     set({ shot: r.shot, takes: [...state.takes, r.take], focusedTake: r.take.id });
+    persist(db.saveShot(r.shot, state.takes));
+  },
+  /** From the Dailies page: bring a stored shot back into the studio. */
+  async openShot(id: string) {
+    const entry = (await db.listShots()).find((e) => e.shot.id === id);
+    const frame = entry && (await db.getFrame(entry.shot.frameId));
+    if (!entry || !frame) return false;
+    hydrated = true;
+    await showShot(entry, frame);
+    return true;
+  },
+  /** Wipe this device's dailies and start over on a sample. */
+  async clearDailies() {
+    await db.clearAll().catch(() => {});
+    state = { ...initial };
+    subs.forEach((f) => f());
+    hydrated = true;
+    const s = SAMPLES[0];
+    set({ moveId: s.moveId, base: s.params });
+    studio.setFrame(s);
   },
 };
 
