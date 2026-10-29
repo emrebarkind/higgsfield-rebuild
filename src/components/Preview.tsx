@@ -203,7 +203,7 @@ function DepthState({ status, error, onRetry, hasFrame }: { status: DepthStatus 
   if (!hasFrame) return <p className="font-mono text-xs uppercase tracking-wider text-muted">No frame yet</p>;
   const text =
     status?.phase === "download"
-      ? `Downloading the depth model — first time only${typeof status.progress === "number" ? ` · ${Math.round(status.progress * 100)}%` : ""}`
+      ? `Downloading the depth model (${status.device === "wasm" ? "27" : "50"} MB) — first time only${typeof status.progress === "number" ? ` · ${Math.round(status.progress * 100)}%` : ""}`
       : status?.device === "wasm"
         ? "Reading depth… slower in this browser (no WebGPU), usually under 10 s"
         : "Reading depth…";

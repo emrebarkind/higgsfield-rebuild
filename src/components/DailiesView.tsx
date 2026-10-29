@@ -83,11 +83,13 @@ export function DailiesView() {
             {circledOnly && entries.length > 0 ? "No circled takes yet." : "Nothing in the can yet."}
           </p>
           <p className="mt-2 text-sm text-muted">
-            {circledOnly && entries.length > 0 ? "Circle the takes you want to keep in the Studio." : "Shots you roll in the Studio show up here."}{" "}
-            <Link href="/" className="underline hover:text-paper">
-              Go to the Studio
-            </Link>
+            {circledOnly && entries.length > 0
+              ? "Circle the takes you want to keep in the Studio."
+              : "This is your history: every shot you roll in the Studio is saved here, on this device, with the take you circled."}
           </p>
+          <Link href="/" className="mt-4 inline-block rounded bg-paper px-4 py-2 font-medium text-bg hover:bg-paper/90">
+            {circledOnly && entries.length > 0 ? "Go to the Studio" : "Roll 3 takes on a sample"}
+          </Link>
         </div>
       ) : (
         <ul className="mt-6 space-y-3">

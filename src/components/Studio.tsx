@@ -87,7 +87,7 @@ export function Studio() {
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl font-bold uppercase tracking-wide">Studio</h1>
-            <p className="text-sm text-muted">A real camera for your still images.</p>
+            <p className="max-w-xl text-sm text-muted">Photo in, real camera move out. Pick a move, roll 3 versions, keep the best, download a 1080p MP4. Free, in your browser, no credits.</p>
           </div>
           <div role="radiogroup" aria-label="Output aspect" className="flex gap-1">
             {ASPECTS.map((a) => (
@@ -148,7 +148,9 @@ export function Studio() {
                   ? "Change the frame, move or settings to roll a new shot."
                   : s.rollState.newShot && s.shot
                     ? "You changed the frame, move or settings, so this starts a new shot."
-                    : ""}
+                    : !s.shot
+                      ? "Roll makes 3 slightly different versions of this move."
+                      : ""}
             </p>
           </div>
         </div>
