@@ -113,7 +113,7 @@ export function FramesView() {
               <img src={r.url} alt={r.prompt} className="w-full rounded bg-panel object-cover" style={{ aspectRatio: ASPECT_CSS[r.aspect] }} />
               <p className="mt-1.5 line-clamp-2 text-sm text-muted">{r.prompt}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => shoot(r.blob, "generated", r.prompt, r.aspect)} className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg hover:bg-paper/90">
+                <button type="button" onClick={() => shoot(r.blob, "generated", r.prompt, r.aspect)} className="rounded bg-go px-3 py-1.5 text-sm font-medium text-paper hover:bg-go/80">
                   Shoot this frame →
                 </button>
                 <a href={r.url} download={`dailies-frame-${r.id}.jpg`} className="rounded border border-line px-3 py-1.5 text-sm hover:border-paper">
@@ -196,7 +196,7 @@ export function FramesView() {
               <button
                 type="submit"
                 disabled={developing}
-                className="ml-auto rounded bg-paper px-4 py-1.5 font-display text-base font-bold uppercase tracking-wide text-bg hover:bg-paper/90 disabled:opacity-50"
+                className="ml-auto rounded bg-go px-4 py-1.5 font-display text-base font-bold uppercase tracking-wide text-paper hover:bg-go/80 disabled:opacity-50"
               >
                 {developing ? "Developing…" : "Generate · Free"}
               </button>

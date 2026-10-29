@@ -52,7 +52,7 @@ export function ExportButton(props: { takeId: string; recipe: TakeRecipe; shot: 
           </button>
         </>
       ) : (
-        <button type="button" onClick={run} className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg">
+        <button type="button" onClick={run} className="rounded bg-go px-3 py-1.5 text-sm font-medium text-paper hover:bg-go/80">
           {path === "mediarecorder-webm" ? "Export WebM" : "Export MP4"} · {aspect}
         </button>
       )}

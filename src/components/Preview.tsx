@@ -151,9 +151,9 @@ function DepthLayer({ box, depth }: { box: ReturnType<typeof frameBox>; depth: D
 function Guides() {
   return (
     <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
-      <rect x="5" y="5" width="90" height="90" fill="none" stroke="var(--text)" strokeOpacity="0.45" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
-      <rect x="10" y="10" width="80" height="80" fill="none" stroke="var(--text)" strokeOpacity="0.3" strokeDasharray="2 2" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
-      <path d="M48 50h4M50 48v4" stroke="var(--text)" strokeOpacity="0.6" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+      <rect x="5" y="5" width="90" height="90" fill="none" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+      <rect x="10" y="10" width="80" height="80" fill="none" stroke="#ffffff" strokeOpacity="0.3" strokeDasharray="2 2" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+      <path d="M48 50h4M50 48v4" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -183,7 +183,7 @@ function FocusLayer(props: {
         className={`pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-paper/80 ${interactive ? "" : "hidden"}`}
         style={{ left: `${left}%`, top: `${top}%` }}
       >
-        <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper" />
+        <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
       </span>
     </div>
   );
@@ -194,7 +194,7 @@ function DepthState({ status, error, onRetry, hasFrame }: { status: DepthStatus 
     return (
       <div className="rounded bg-bg/90 px-4 py-3 text-sm">
         <p>Couldn’t read the depth of this frame: {error}</p>
-        <button type="button" onClick={onRetry} className="mt-2 rounded bg-paper px-3 py-1.5 font-medium text-bg">
+        <button type="button" onClick={onRetry} className="mt-2 rounded bg-go px-3 py-1.5 font-medium text-paper hover:bg-go/80">
           Try again
         </button>
       </div>

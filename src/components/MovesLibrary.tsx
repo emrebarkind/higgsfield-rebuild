@@ -67,7 +67,7 @@ export function MovesLibrary() {
                   s.setMove(id);
                   router.push("/");
                 }}
-                className="mt-3 rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg hover:bg-paper/90"
+                className="mt-3 rounded bg-go px-3 py-1.5 text-sm font-medium text-paper hover:bg-go/80"
               >
                 Use this move
               </button>

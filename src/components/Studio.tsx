@@ -137,7 +137,7 @@ export function Studio() {
                 s.roll(3);
               }}
               aria-disabled={rollDisabled || s.rolling || undefined}
-              className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg hover:bg-paper/90 aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
+              className="rounded bg-go px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-paper hover:bg-go/80 aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
               {s.rollState.label}
             </button>

@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo_Narrow, Inter, JetBrains_Mono } from "next/font/google";
+import { Archivo_Narrow, Geist, JetBrains_Mono } from "next/font/google";
 import { Nav } from "@/src/components/Nav";
 import { Footer } from "@/src/components/Footer";
 import "./globals.css";
 
 const display = Archivo_Narrow({ variable: "--nf-display", subsets: ["latin"], weight: ["500", "700"] });
-const ui = Inter({ variable: "--nf-ui", subsets: ["latin"] });
+const ui = Geist({ variable: "--nf-ui", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--nf-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     "Turn a still image into real camera moves rendered in your browser. Roll takes, circle the best, export MP4. Free, no sign-in.",
 };
 
-// Matches --bg, so the phone's browser chrome is graphite too.
-export const viewport: Viewport = { themeColor: "#1c1b19" };
+// Matches --bg, so the phone's browser chrome is white too.
+export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -42,7 +42,7 @@ export function FrameInput({ frame, busy, error, onFile, onSample, children }: P
           type="button"
           onClick={() => input.current?.click()}
           disabled={busy}
-          className="rounded bg-paper px-3 py-1.5 font-medium text-bg disabled:opacity-50"
+          className="rounded bg-go px-3 py-1.5 font-medium text-paper hover:bg-go/80 disabled:opacity-50"
         >
           {busy ? "Opening…" : "Upload your image"}
         </button>

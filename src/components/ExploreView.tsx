@@ -49,7 +49,7 @@ export function ExploreView() {
             chose: live, instant, as often as you like.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/" className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg hover:bg-paper/90">
+            <Link href="/" className="rounded bg-go px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-paper hover:bg-go/80">
               Open the Studio
             </Link>
             <Link href="/frames" className="rounded border border-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide hover:bg-paper hover:text-bg">

@@ -70,14 +70,14 @@ export function MoveDiagram(props: { moveId: MoveId; params?: MoveParams; active
     <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label={`${MOVES[moveId].label}: ${MOVES[moveId].plain}`}>
       <line {...plane} stroke="var(--muted)" strokeWidth="1.5" />
       {cone(start).map((pts, i) => (
-        <polyline key={`s${i}`} points={pts} fill="none" stroke="var(--line)" strokeWidth="1" strokeDasharray="2 2" />
+        <polyline key={`s${i}`} points={pts} fill="none" stroke="var(--muted)" strokeOpacity="0.5" strokeWidth="1" strokeDasharray="2 2" />
       ))}
       {cone(now).map((pts, i) => (
         <polyline key={`e${i}`} points={pts} fill="none" stroke="var(--text)" strokeWidth="1" opacity="0.85" />
       ))}
       <polyline points={path} fill="none" stroke="var(--muted)" strokeWidth="1.5" strokeLinecap="round" />
       <circle cx={P(start)[0]} cy={P(start)[1]} r="2" fill="var(--muted)" />
-      <rect x={r(P(now)[0] - 3.5)} y={r(P(now)[1] - 2.5)} width="7" height="5" rx="1" fill="var(--text)" />
+      <rect x={r(P(now)[0] - 3.5)} y={r(P(now)[1] - 2.5)} width="7" height="5" rx="1" fill="var(--circle)" />
       <text x={W - 4} y={H - 4} textAnchor="end" fontSize="6" fill="var(--muted)" fontFamily="var(--font-mono)">
         {side ? "SIDE" : "TOP"}
       </text>

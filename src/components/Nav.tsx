@@ -53,7 +53,7 @@ export function Nav() {
         >
           {/* On a phone the badge alone stands for Pricing, to leave room for the sections. */}
           <span className="sr-only sm:not-sr-only">Pricing</span>
-          <span className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-bg">Free</span>
+          <span className="rounded bg-go px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-paper">Free</span>
         </Link>
       </nav>
     </header>

@@ -55,7 +55,7 @@ export default function PricingPage() {
             </li>
           ))}
         </ul>
-        <Link href="/" className="mt-6 block rounded bg-paper px-4 py-2.5 text-center font-display text-lg font-bold uppercase tracking-wide text-bg hover:bg-paper/90">
+        <Link href="/" className="mt-6 block rounded bg-go px-4 py-2.5 text-center font-display text-lg font-bold uppercase tracking-wide text-paper hover:bg-go/80">
           Open the Studio
         </Link>
       </section>

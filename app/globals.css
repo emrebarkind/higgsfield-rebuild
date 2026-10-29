@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
-/* Edit-bay tokens (spec §8). Graphite, never #000; tally red only for
-   rolling/rendering; amber only for circled takes. No gradients. */
+/* Identity (29 Oct): white paper, black ink, lime for "go" (Roll, Export,
+   Generate: always with black text on it, never lime text on white), purple
+   for "chosen" (circled takes, focus, selected). Tally red only while rolling
+   or rendering. Players stay dark: monitors on a white desk. No gradients. */
 :root {
-  --bg: #1c1b19;
-  --panel: #252421;
-  --line: #3a3833;
-  --text: #f2efe8;
-  --muted: #a8a399;
+  --bg: #ffffff;
+  --panel: #f4f4f1;
+  --line: #e2e2dc;
+  --text: #111111;
+  --muted: #5c5c66;
   --tally: #e5402f;
-  --circle: #f0a630;
-  color-scheme: dark;
+  --circle: #6b3cf5;
+  --go: #c5f04a;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -21,6 +24,7 @@
   --color-muted: var(--muted);
   --color-tally: var(--tally);
   --color-circle: var(--circle);
+  --color-go: var(--go);
 }
 
 /* next/font sets --nf-* on <html>; these are the names the app uses. */
@@ -41,6 +45,6 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--circle);
   outline-offset: 2px;
 }
