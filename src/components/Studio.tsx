@@ -12,6 +12,7 @@ import { ExportButton } from "./ExportButton";
 import { GenerateFrame } from "./GenerateFrame";
 import { PrintPanel } from "./PrintPanel";
 import { SampleReel } from "./SampleReel";
+import { SAMPLES } from "@/src/lib/samples";
 import { usePrefersReducedMotion, useSyncedClock } from "./TakePlayer";
 
 const ASPECTS: OutAspect[] = ["16:9", "9:16", "1:1"];
@@ -67,8 +68,10 @@ export function Studio() {
   // Roll is only ever aria-disabled, never disabled, so keyboard focus isn't lost; the store ignores a press it can't take.
   const rollDisabled = s.rollState.disabled || !s.depth;
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 pb-28 pt-6 sm:px-6 lg:grid lg:grid-cols-[minmax(300px,380px)_1fr] lg:gap-8 lg:pb-10">
-      <section className="order-1 lg:order-2" aria-label="Preview and takes">
+    // Phones read top to bottom: preview, then frame / move / settings, then takes and samples.
+    // From lg the controls sit in a left column beside preview and takes.
+    <div className="mx-auto w-full max-w-[1440px] px-4 pb-28 pt-6 sm:px-6 lg:grid lg:grid-cols-[minmax(300px,380px)_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:pb-10">
+      <section className="lg:col-start-2 lg:row-start-1" aria-label="Preview">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl font-bold uppercase tracking-wide">Studio</h1>
@@ -128,8 +131,18 @@ export function Studio() {
             </p>
           </div>
         </div>
+      </section>
 
-        <div className="mt-6">
+      <aside className="mt-8 space-y-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0" aria-label="Frame, move and settings">
+        <FrameInput frame={s.frame} busy={s.frameBusy} error={s.frameError} onFile={(f) => s.setFrame(f)} onSample={(x) => s.setFrame(x)}>
+          <GenerateFrame aspect={s.aspect} onFrame={(blob, prompt) => s.setFrame(blob, "generated", prompt)} onUseSample={() => s.setFrame(SAMPLES[0])} />
+        </FrameInput>
+        <MoveStrip value={s.moveId} onChange={s.setMove} />
+        <ParamsPanel moveId={s.moveId} params={s.base} setParam={s.setParam} />
+      </aside>
+
+      <section className="lg:col-start-2 lg:row-start-2" aria-label="Takes">
+        <div className="mt-8 lg:mt-6">
           <TakesGrid
             shot={s.shot}
             takes={s.takes}
@@ -176,14 +189,6 @@ export function Studio() {
           }}
         />
       </section>
-
-      <aside className="order-2 mt-8 space-y-6 lg:order-1 lg:mt-0" aria-label="Frame, move and settings">
-        <FrameInput frame={s.frame} busy={s.frameBusy} error={s.frameError} onFile={(f) => s.setFrame(f)} onSample={(x) => s.setFrame(x)}>
-          <GenerateFrame aspect={s.aspect} onFrame={(blob, prompt) => s.setFrame(blob, "generated", prompt)} />
-        </FrameInput>
-        <MoveStrip value={s.moveId} onChange={s.setMove} />
-        <ParamsPanel moveId={s.moveId} params={s.base} setParam={s.setParam} />
-      </aside>
     </div>
   );
 }

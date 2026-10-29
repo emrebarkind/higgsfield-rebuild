@@ -4,7 +4,7 @@
 
 ![Dailies studio: a sample frame with a push-in previewing live, three takes below](docs/screenshot.jpg)
 
-Dailies is an 8x take-home that rebuilds [Higgsfield](https://higgsfield.ai) around the one thing its users praise most, camera motion on your own image, and fixes the part they complain about. On Higgsfield a "camera move" is a word handed to a video model: you pay, wait minutes and hope. In Dailies the camera is real. Your frame gets an AI depth map, becomes a 2.5D scene, and the move is rendered exactly as chosen, in your browser, instantly, as often as you like, for free.
+Dailies is an 8x take-home that rebuilds [Higgsfield](https://higgsfield.ai) around its clearest differentiator, camera motion on your own image, and fixes the part users complain about most: paying and waiting for every try. (Users praise the model catalogue and output quality more; camera control ranks third, see [voice of user](docs/recon/02-voice-of-user.md).) The bet: for a solo creator who needs a camera move on a still, an exact move that previews instantly, re-rolls for free and exports deterministically beats a generative clip that costs credits and minutes per try. On Higgsfield a "camera move" is a word handed to a video model: you pay, wait minutes and hope. In Dailies the camera is real. Your frame gets an AI depth map, becomes a 2.5D scene, and the move is rendered exactly as chosen, in your browser, instantly, as often as you like, for free.
 
 **Frame → Move → Roll takes → Review side by side → Circle the best → Export MP4.**
 
@@ -31,7 +31,7 @@ Dailies is an 8x take-home that rebuilds [Higgsfield](https://higgsfield.ai) aro
 | **Real** | Exact camera moves | 9 moves (push in, pull back, pan left/right, orbit, crane up, dolly zoom, crash zoom, handheld static), each a deterministic function of the take's recipe and seed |
 | **Real** | MP4 export | The take is re-rendered offline frame by frame and encoded with WebCodecs H.264 + mp4-muxer; WebM via MediaRecorder where H.264 encoding is missing |
 | **Real** | History | Shots, takes (as recipes), frames and depth maps in your browser's IndexedDB; survives refreshes and return visits |
-| **Experimental** | Print with AI motion | A circled take's frame and move sent to Wan 2.2 image-to-video on a free community GPU. May queue or be unavailable; labelled so |
+| **Experimental** | Print an AI variation | A circled take's frame and move (in words; not its lens, strength, easing or duration) sent to Wan 2.2 image-to-video on a free community GPU. May queue or be unavailable; labelled so |
 | **Cut** | Paid generation, accounts, credits | Zero spend by design ([DECISIONS.md](DECISIONS.md)) |
 | **Cut** | Pollinations for frames | It refuses browser calls without a Turnstile token and rate-limits Vercel's shared IPs ([spikes](docs/spikes.md#addendum-task-10-1350-utc--pollinations-from-a-real-browser-page)). The four sample frames were made with it before that was known, so they carry its small logo |
 | **Cut** | Model catalogue, community feed, characters, audio, VFX apps | Not the moat ([recon](docs/recon/01-product-teardown.md)) |

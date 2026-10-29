@@ -34,13 +34,16 @@ export function PrintPanel(props: { takeId: string; recipe: TakeRecipe; shot: nu
           </>
         ) : (
           <button type="button" onClick={start} className="rounded border border-paper px-3 py-1.5 text-sm hover:bg-paper hover:text-bg">
-            {state.kind === "done" ? "Print again" : "Print with AI motion"}
+            {state.kind === "done" ? "Print another variation" : "Print an AI variation"}
           </button>
         )}
         <span className="font-mono text-[11px] uppercase tracking-wider text-muted">{PRINT_LABEL}</span>
       </div>
       <p className="mt-1.5 text-xs text-muted">
         A generative video model re-imagines this frame with your move. Unlike the 2.5D take, subjects can move — and details may change.
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        Sends this frame and the move, in words, to a public Hugging Face Space. This take’s lens, strength, easing and duration are not sent; every variation is a 3 s clip.
       </p>
       {state.kind === "failed" && (
         <p role="alert" className="mt-2 text-sm">
@@ -57,7 +60,7 @@ export function PrintPanel(props: { takeId: string; recipe: TakeRecipe; shot: nu
           <figure>
             <video src={state.url} controls loop muted playsInline autoPlay={!reduced} className="w-full rounded-sm bg-[#0b0b0a]" />
             <figcaption className="mt-1 flex justify-between font-mono text-[11px] uppercase tracking-wider text-muted">
-              <span>AI print · experimental</span>
+              <span>AI variation · experimental</span>
               <a href={state.url} download={`dailies-shot${String(shot).padStart(2, "0")}-take${take}-print.mp4`} className="underline hover:text-paper">
                 Download
               </a>

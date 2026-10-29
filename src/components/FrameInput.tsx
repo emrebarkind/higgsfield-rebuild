@@ -4,6 +4,8 @@ import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { SAMPLES, type Sample } from "@/src/lib/samples";
 import type { Frame } from "@/src/lib/frame";
 
+export const FRAME_FILE_INPUT = "frame-file";
+
 interface Props {
   frame: Frame | null;
   busy: boolean;
@@ -47,6 +49,7 @@ export function FrameInput({ frame, busy, error, onFile, onSample, children }: P
         <p className="mt-2 text-xs text-muted">or drop it here · JPG, PNG or WebP, up to 10 MB</p>
         <input
           ref={input}
+          id={FRAME_FILE_INPUT}
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"

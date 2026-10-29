@@ -53,8 +53,11 @@ export async function printWithAI(
   } catch {
     throw fail('The community GPU couldn’t be reached.');
   }
+  const inputImage = await toFile(frame.blob);
+  // Cancel pressed while connecting: never send the frame.
+  if (signal?.aborted) throw abortError();
   const job = client.submit('/generate_video', {
-    input_image: await toFile(frame.blob),
+    input_image: inputImage,
     prompt,
     steps: 4,
     duration_seconds: 3,

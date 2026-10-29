@@ -84,4 +84,16 @@ describe('printWithAI', () => {
     await expect(p).rejects.toMatchObject({ name: 'AbortError' });
     expect(cancel).toHaveBeenCalled();
   });
+
+  test('cancelling while the space is still connecting never submits a job', async () => {
+    const submit = vi.fn();
+    const { client } = fakeClient([], { submit });
+    const ctrl = new AbortController();
+    let connected!: (c: PrintClient) => void;
+    const p = printWithAI(frame, 'p', () => {}, ctrl.signal, { connect: () => new Promise((r) => (connected = r)), toFile: (b) => b });
+    ctrl.abort();
+    connected(client);
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' });
+    expect(submit).not.toHaveBeenCalled();
+  });
 });

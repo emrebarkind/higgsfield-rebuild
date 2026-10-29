@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { createRateLimiter } from '../ratelimit';
+import { describe, expect, test, vi } from 'vitest';
+import { createRateLimiter, createSingleFlight } from '../ratelimit';
 
 describe('createRateLimiter', () => {
   test('allows 10 hits per 60 s, rejects the 11th with a retry time', () => {
@@ -28,5 +28,28 @@ describe('createRateLimiter', () => {
     const rl = createRateLimiter({ limit: 1, windowMs: 45_000 });
     rl.hit('me', 0);
     expect(rl.hit('me', 13_000).retryAfterS).toBe(32);
+  });
+});
+
+describe('createSingleFlight', () => {
+  test('a second call while the first is running is dropped, then calls work again', async () => {
+    let finish!: () => void;
+    const fn = vi.fn(() => new Promise<void>((r) => (finish = r)));
+    const once = createSingleFlight();
+    const first = once(fn);
+    void once(fn); // Enter pressed again while generating
+    expect(fn).toHaveBeenCalledTimes(1);
+    finish();
+    await first;
+    void once(fn);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  test('a failed run releases the lock', async () => {
+    const fn = vi.fn().mockRejectedValueOnce(new Error('boom')).mockResolvedValue(undefined);
+    const once = createSingleFlight();
+    await expect(once(fn)).rejects.toThrow('boom');
+    await once(fn);
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 });

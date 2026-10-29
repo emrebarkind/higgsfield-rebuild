@@ -15,3 +15,18 @@ export function createRateLimiter({ limit, windowMs }: { limit: number; windowMs
     },
   };
 }
+
+// One run at a time: a call made while the last one is still running is dropped
+// (Enter pressed again while a frame develops), not queued. Keep one per component.
+export function createSingleFlight() {
+  let running = false;
+  return async (fn: () => Promise<void>): Promise<void> => {
+    if (running) return;
+    running = true;
+    try {
+      await fn();
+    } finally {
+      running = false;
+    }
+  };
+}

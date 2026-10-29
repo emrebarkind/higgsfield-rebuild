@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { OutAspect } from "@/src/lib/moves";
 import { FrameGenError, generateFrame, MAX_PROMPT, validatePrompt } from "@/src/lib/framegen";
-import { createRateLimiter } from "@/src/lib/ratelimit";
+import { createRateLimiter, createSingleFlight } from "@/src/lib/ratelimit";
+import { FRAME_FILE_INPUT } from "./FrameInput";
 
 // Repeated clicks would spend the visitor's own free GPU quota; a light brake.
 const limiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
@@ -13,11 +14,12 @@ type Status =
   | { kind: "developing"; queuePosition: number | null }
   | { kind: "error"; message: string; detail?: string };
 
-export function GenerateFrame({ aspect, onFrame }: { aspect: OutAspect; onFrame: (blob: Blob, prompt: string) => Promise<void> | void }) {
+export function GenerateFrame({ aspect, onFrame, onUseSample }: { aspect: OutAspect; onFrame: (blob: Blob, prompt: string) => Promise<void> | void; onUseSample: () => void }) {
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [once] = useState(createSingleFlight);
 
-  const go = async () => {
+  const go = () => once(async () => {
     const invalid = validatePrompt(prompt);
     if (invalid) return setStatus({ kind: "error", message: invalid });
     const slot = limiter.hit("me");
@@ -37,7 +39,7 @@ export function GenerateFrame({ aspect, onFrame }: { aspect: OutAspect; onFrame:
           : { kind: "error", message: "Couldn’t generate that frame — try again or upload one.", detail: e.message },
       );
     }
-  };
+  });
 
   const developing = status.kind === "developing";
   return (
@@ -78,10 +80,19 @@ export function GenerateFrame({ aspect, onFrame }: { aspect: OutAspect; onFrame:
         </p>
       ) : null}
       {status.kind === "error" && (
-        <p role="alert" className="mt-1.5 text-sm">
+        <div role="alert" className="mt-1.5 text-sm">
           {status.message}
           {status.detail && <span className="block text-xs text-muted">{status.detail}</span>}
-        </p>
+          <span className="mt-1.5 flex gap-2">
+            {/* The GPU being busy shouldn't end the visit: the other two ways in, right here. */}
+            <button type="button" onClick={() => document.getElementById(FRAME_FILE_INPUT)?.click()} className="rounded border border-line px-2 py-1 text-xs hover:border-paper">
+              Upload an image
+            </button>
+            <button type="button" onClick={onUseSample} className="rounded border border-line px-2 py-1 text-xs hover:border-paper">
+              Use a sample
+            </button>
+          </span>
+        </div>
       )}
     </form>
   );
