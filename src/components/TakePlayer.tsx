@@ -6,6 +6,8 @@ import { createScene, type Scene, type TakeRecipe } from "@/src/lib/render/scene
 import { frameBitmap } from "@/src/lib/render/bitmap";
 import { watchContextLoss } from "@/src/lib/render/context";
 import { createClock, type Clock } from "@/src/lib/clock";
+import { witnessPath } from "@/src/lib/render/witness";
+import { witnessAllowed } from "@/src/lib/flags";
 
 export const ASPECT_CSS: Record<OutAspect, string> = { "16:9": "16 / 9", "9:16": "9 / 16", "1:1": "1 / 1" };
 /** Pause on the last pose before looping, so the end of a move reads. */
@@ -19,9 +21,11 @@ interface Props {
   aspect: OutAspect;
   className?: string;
   children?: ReactNode;
+  /** Show the witness cam inset: the shot camera seen from outside, flying through the photo's relief. */
+  witness?: boolean;
 }
 
-export function TakePlayer({ recipe, playing, clock, aspect, className = "", children }: Props) {
+export function TakePlayer({ recipe, playing, clock, aspect, className = "", children, witness = false }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
   const own = useRef(0);
@@ -32,6 +36,11 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
   // The browser dropped this player's WebGL context; bumping `generation` builds a fresh one.
   const [lost, setLost] = useState(false);
   const [generation, setGeneration] = useState(0);
+  // Phones don't get the inset: at that size it's a smudge over the shot.
+  const wide = useMinWidth(640);
+  const withWitness = witness && wide && typeof window !== "undefined" && witnessAllowed(window.location.search);
+  /** Where the inset sits, in % of the player, for its label. */
+  const [inset, setInset] = useState<{ left: number; top: number } | null>(null);
 
   const draw = useCallback(() => {
     const s = scene.current;
@@ -59,10 +68,14 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
     const unwatch = watchContextLoss(canvas, () => setLost(true), reload);
     frameBitmap(recipe.frame).then((bmp) => {
       if (gone) return;
-      scene.current = createScene(canvas, bmp, recipe.depth, { lensMm: recipe.params.lensMm });
+      scene.current = createScene(canvas, bmp, recipe.depth, { lensMm: recipe.params.lensMm, witness: withWitness });
       const size = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        scene.current?.resize(Math.round(host.clientWidth * dpr), Math.round(host.clientHeight * dpr), live.current.aspect);
+        const w = Math.round(host.clientWidth * dpr);
+        const h = Math.round(host.clientHeight * dpr);
+        scene.current?.resize(w, h, live.current.aspect);
+        const r = scene.current?.witnessRect();
+        setInset(r ? { left: (r.x / w) * 100, top: ((h - r.y - r.height) / h) * 100 } : null);
         draw();
       };
       ro = new ResizeObserver(size);
@@ -77,7 +90,15 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
       scene.current = null;
       canvas.remove();
     };
-  }, [recipe.frame, recipe.depth, recipe.params.lensMm, draw, generation]);
+  }, [recipe.frame, recipe.depth, recipe.params.lensMm, draw, generation, withWitness]);
+
+  // The witness view draws the whole path of the move (poseAt samples), so it follows the recipe.
+  useEffect(() => {
+    if (!withWitness) return;
+    const r = recipe;
+    scene.current?.setWitnessPath(witnessPath(r.moveId, r.params, r.seed, r.frame.width / r.frame.height));
+    draw();
+  }, [recipe, withWitness, draw, generation]);
 
   // Re-fit when the output aspect changes.
   useEffect(() => {
@@ -117,6 +138,15 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
   return (
     <div ref={wrap} className={`relative overflow-hidden bg-[#0b0b0a] ${className}`} style={{ aspectRatio: ASPECT_CSS[aspect] }}>
       {children}
+      {withWitness && inset && (
+        <span
+          className="pointer-events-none absolute rounded-sm bg-circle px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white"
+          style={{ left: `${inset.left}%`, top: `${inset.top}%`, transform: "translate(6px, 6px)" }}
+          aria-hidden="true"
+        >
+          Witness cam
+        </span>
+      )}
       {lost && (
         // A span, not a button: players sit inside the take buttons. A click here reloads and goes no further.
         <span
@@ -153,6 +183,19 @@ export function useSyncedClock(durationsS: number[], playing: boolean) {
     return () => cancelAnimationFrame(raf);
   }, [clock, playing, loop]);
   return { clock, loopS: loop };
+}
+
+function useMinWidth(px: number): boolean {
+  const query = `(min-width: ${px}px)`;
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }
 
 const reducedQuery = "(prefers-reduced-motion: reduce)";

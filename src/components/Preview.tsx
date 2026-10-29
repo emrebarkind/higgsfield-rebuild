@@ -19,6 +19,9 @@ interface Props {
   playing: boolean;
   onTogglePlay: () => void;
   onFocus?: (focus: { x: number; y: number }) => void;
+  /** The witness cam inset (W in the Studio). */
+  witness?: boolean;
+  onToggleWitness?: () => void;
 }
 
 // Frames are few and kept for the visit anyway, so their URLs are made once and kept.
@@ -39,7 +42,7 @@ function frameBox(frame: Frame, aspect: OutAspect) {
 }
 
 export function Preview(props: Props) {
-  const { frame, depth, depthStatus, depthError, onRetryDepth, moveId, params, aspect, playing, onTogglePlay, onFocus } = props;
+  const { frame, depth, depthStatus, depthError, onRetryDepth, moveId, params, aspect, playing, onTogglePlay, onFocus, witness = false, onToggleWitness } = props;
   const still = objectUrl(frame?.blob);
   const box = frame ? frameBox(frame, aspect) : null;
   const [showDepth, setShowDepth] = useState(false);
@@ -68,7 +71,7 @@ export function Preview(props: Props) {
   return (
     <div className="relative w-full">
       {recipe ? (
-        <TakePlayer recipe={recipe} playing={playing} aspect={aspect} className="w-full">
+        <TakePlayer recipe={recipe} playing={playing} aspect={aspect} witness={witness} className="w-full">
           {showDepth && <DepthLayer box={box!} depth={recipe.depth} />}
           {showGuides && <Guides />}
           <FocusLayer box={box!} focus={params.focus} onClick={pickFocus} onKey={moveFocus} interactive={!!onFocus} />
@@ -102,6 +105,12 @@ export function Preview(props: Props) {
           <div className="absolute bottom-3 right-3 flex gap-1.5">
             <Toggle on={showDepth} onClick={() => setShowDepth(!showDepth)} label="See the depth" />
             <Toggle on={showGuides} onClick={() => setShowGuides(!showGuides)} label="Guides" />
+            {onToggleWitness && (
+              // The inset only draws from 640 px up, so the switch only shows there too.
+              <span className="hidden sm:contents">
+                <Toggle on={witness} onClick={onToggleWitness} label="Witness cam" />
+              </span>
+            )}
           </div>
         </>
       )}
@@ -115,7 +124,7 @@ function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; labe
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={`rounded px-2.5 py-1.5 font-mono text-xs uppercase tracking-wider ${on ? "bg-paper text-bg" : "bg-bg/80 text-paper hover:bg-bg"}`}
+      className={`rounded px-2.5 py-1.5 font-mono text-xs uppercase tracking-wider ${on ? "bg-circle text-white" : "bg-bg/80 text-paper hover:bg-bg"}`}
     >
       {label}
     </button>

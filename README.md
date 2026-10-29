@@ -4,6 +4,8 @@
 
 Photo in, real camera move out. Pick a move, roll 3 versions, keep the best, download a 1080p MP4. Everything runs in your browser; nothing costs credits.
 
+**The signature touch: the witness cam.** Moves are math, not generation, so Dailies can show you the camera itself. In the corner of the Explore hero (and on the Studio preview with **W**) a second camera films the shot camera, a lime frustum, flying through your photo's 3D relief along the move you chose. A generated video has no camera to show. Chosen by a five-advisor council ([verdict](docs/council/2026-10-29-signature-touch.md)).
+
 **Sections:** [Explore](https://higgsfield-rebuild-cyan.vercel.app/explore) (the tour) · [Studio](https://higgsfield-rebuild-cyan.vercel.app/) (frame → move → takes → MP4) · [Frames](https://higgsfield-rebuild-cyan.vercel.app/frames) (text to frame on a free GPU) · [Moves](https://higgsfield-rebuild-cyan.vercel.app/moves) (the nine moves, by kind) · [Dailies](https://higgsfield-rebuild-cyan.vercel.app/dailies) (your history) · [Pricing](https://higgsfield-rebuild-cyan.vercel.app/pricing) (free, and why). The same jobs Higgsfield splits into Explore, Image, Video, presets, History and Pricing, in Dailies' own look ([why not a copy](docs/superpowers/specs/2026-10-29-platform-breadth.md)).
 
 ## Try it in 60 seconds

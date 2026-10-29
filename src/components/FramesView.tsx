@@ -156,7 +156,7 @@ export function FramesView() {
               </span>
             </div>
           )}
-          <div className="rounded border border-line bg-panel p-2">
+          <div className="rounded border border-muted bg-panel p-2 focus-within:outline focus-within:outline-2 focus-within:outline-circle">
             <label htmlFor="frames-prompt" className="sr-only">
               Describe a frame
             </label>
@@ -175,7 +175,7 @@ export function FramesView() {
                 }
               }}
               placeholder="A lighthouse on a cliff at dusk, 35mm film…"
-              className="w-full resize-none bg-transparent px-1.5 py-1 text-sm placeholder:text-muted/70 focus:outline-none"
+              className="w-full resize-none bg-transparent px-1.5 py-1 text-sm placeholder:text-muted focus:outline-none"
             />
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <div role="radiogroup" aria-label="Frame aspect" className="flex gap-1">

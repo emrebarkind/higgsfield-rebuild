@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { baseFovDeg, DEPTH_SCALE, fitFrame, type CameraPose, type LensMm, type MoveId, type MoveParams, type OutAspect } from '../moves';
 import type { Frame } from '../frame';
 import type { DepthMap } from '../depth/client';
+import { insetRect, witnessView } from './witness';
 
 export interface TakeRecipe {
   frame: Frame;
@@ -21,6 +22,10 @@ export interface Scene {
   dispose(): void;
   /** The browser dropped this scene's WebGL context; nothing it draws shows. */
   lost(): boolean;
+  /** Witness scenes only: the path the shot camera travels (poseAt samples). */
+  setWitnessPath(poses: CameraPose[]): void;
+  /** Witness scenes only: the inset's rect in canvas pixels (GL origin bottom-left). */
+  witnessRect(): Rect | null;
   canvas: HTMLCanvasElement | OffscreenCanvas;
 }
 
@@ -84,6 +89,19 @@ const vertexShader = /* glsl */ `
   }
 `;
 
+// The witness view draws the relief as points: gaps where depth jumps read
+// honestly, where a mesh seen from the side would stretch into a rubber sheet.
+const pointsVertexShader = vertexShader
+  .replace('uniform float overscan;', 'uniform float overscan;\n  uniform float pointSize;')
+  .replace('gl_Position =', 'gl_PointSize = pointSize;\n    gl_Position =');
+
+const LIME = new THREE.Color('#c5f04a');
+const PURPLE = '#6b3cf5';
+const INSET_BG = '#111111';
+/** Below this inset width (canvas pixels) the witness view is skipped. */
+const MIN_INSET = 160;
+const WITNESS_LAYER = 1;
+
 const fragmentShader = /* glsl */ `
   uniform sampler2D map;
   varying vec2 vUv;
@@ -106,7 +124,7 @@ export function createScene(
   canvas: HTMLCanvasElement | OffscreenCanvas,
   frame: ImageBitmap,
   depth: DepthMap,
-  opts: { lensMm?: LensMm; preserveDrawingBuffer?: boolean } = {},
+  opts: { lensMm?: LensMm; preserveDrawingBuffer?: boolean; witness?: boolean } = {},
 ): Scene {
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -142,6 +160,7 @@ export function createScene(
   const camera = new THREE.PerspectiveCamera(baseFovDeg(lens), aspect, 0.01, 100);
 
   let rect: Rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+  const witness = opts.witness ? createWitness(scene, material, aspect, lens) : null;
 
   return {
     canvas,
@@ -154,7 +173,10 @@ export function createScene(
       renderer.setScissor(rect.x, rect.y, rect.width, rect.height);
       renderer.setScissorTest(true);
       renderer.render(scene, camera);
+      if (witness) witness.render(renderer, camera, rect);
     },
+    setWitnessPath: (poses) => witness?.setPath(poses),
+    witnessRect: () => (witness && insetRect(rect).width >= MIN_INSET ? insetRect(rect) : null),
     resize(w, h, outAspect) {
       renderer.setPixelRatio(1); // callers pass device pixels
       renderer.setSize(w, h, false);
@@ -165,8 +187,77 @@ export function createScene(
       material.dispose();
       map.dispose();
       dmap.dispose();
+      witness?.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
     },
   };
 }
+
+/** The witness view's objects, all on WITNESS_LAYER so the shot camera never sees them. */
+function createWitness(scene: THREE.Scene, material: THREE.ShaderMaterial, aspect: number, lens: LensMm) {
+  const pointsGeo = new THREE.PlaneGeometry(2 * aspect * OVERSCAN, 2 * OVERSCAN, 120, 120);
+  const pointsMat = new THREE.ShaderMaterial({
+    vertexShader: pointsVertexShader,
+    fragmentShader,
+    uniforms: { ...material.uniforms, pointSize: { value: 3 } },
+  });
+  const points = new THREE.Points(pointsGeo, pointsMat);
+
+  // A stand-in for the shot camera whose frustum reaches the photo, drawn in lime.
+  const d = 1 / Math.tan((baseFovDeg(lens) / 2) * RAD);
+  const stand = new THREE.PerspectiveCamera(baseFovDeg(lens), aspect, 0.2, d + DEPTH_SCALE * 0.5);
+  const helper = new THREE.CameraHelper(stand);
+  helper.setColors(LIME, LIME, LIME, LIME, LIME);
+
+  const pathGeo = new THREE.BufferGeometry();
+  const pathMat = new THREE.LineBasicMaterial({ color: LIME, transparent: true, opacity: 0.6 });
+  const path = new THREE.Line(pathGeo, pathMat);
+
+  for (const o of [points, helper, path]) {
+    o.layers.set(WITNESS_LAYER);
+    scene.add(o);
+  }
+
+  const view = witnessView(lens, aspect);
+  const cam = new THREE.PerspectiveCamera(view.fovDeg, 16 / 10, 0.05, 100);
+  cam.layers.set(WITNESS_LAYER);
+  cam.position.set(...view.position);
+  cam.lookAt(...view.target);
+
+  return {
+    setPath(poses: CameraPose[]) {
+      pathGeo.setFromPoints(poses.map((p) => new THREE.Vector3(p.x, p.y, p.z)));
+    },
+    render(renderer: THREE.WebGLRenderer, shot: THREE.PerspectiveCamera, frameRect: Rect) {
+      const r = insetRect(frameRect);
+      if (r.width < MIN_INSET) return;
+      stand.position.copy(shot.position);
+      stand.rotation.copy(shot.rotation);
+      stand.fov = shot.fov;
+      stand.updateProjectionMatrix();
+      stand.updateMatrixWorld(true);
+      helper.update();
+      cam.aspect = r.width / r.height;
+      cam.updateProjectionMatrix();
+      // A purple border, then the dark inset, then the witness camera's view of layer 1.
+      const b = Math.max(2, Math.round(r.width * 0.008));
+      renderer.setScissor(r.x - b, r.y - b, r.width + 2 * b, r.height + 2 * b);
+      renderer.setClearColor(PURPLE, 1);
+      renderer.clear();
+      renderer.setViewport(r.x, r.y, r.width, r.height);
+      renderer.setScissor(r.x, r.y, r.width, r.height);
+      renderer.setClearColor(INSET_BG, 1);
+      renderer.render(scene, cam);
+      renderer.setClearColor(BAR, 1);
+    },
+    dispose() {
+      pointsGeo.dispose();
+      pointsMat.dispose();
+      pathGeo.dispose();
+      pathMat.dispose();
+      helper.dispose();
+    },
+  };
+}
+

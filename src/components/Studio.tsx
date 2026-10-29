@@ -35,6 +35,7 @@ export function Studio() {
   const reduced = usePrefersReducedMotion();
   const [previewPlay, setPreviewPlay] = useState<boolean | null>(null);
   const [takesPlay, setTakesPlay] = useState<boolean | null>(null);
+  const [witness, setWitness] = useState(false);
   const previewPlaying = previewPlay ?? !reduced;
   const takesPlaying = takesPlay ?? !reduced;
   const { clock, loopS } = useSyncedClock(s.takes.map((t) => t.params.durationS), takesPlaying);
@@ -54,11 +55,13 @@ export function Studio() {
   const { ensureFrame } = s;
   useEffect(() => ensureFrame(), [ensureFrame]);
 
-  // Review keys: Space play/pause, J/K/L scrub, 1–6 pick a take, C circle it.
+  // Review keys: Space play/pause, J/K/L scrub, 1–6 pick a take, C circle it. W: witness cam.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || typingInto(e.target) || s.takes.length === 0) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || typingInto(e.target)) return;
       const k = e.key.toLowerCase();
+      if (k === "w") return setWitness((v) => !v);
+      if (s.takes.length === 0) return;
       if (k === " " && spaceBelongsTo(e.target)) return;
       if (k === " " || k === "k") {
         e.preventDefault();
@@ -117,6 +120,8 @@ export function Studio() {
             playing={previewPlaying}
             onTogglePlay={() => setPreviewPlay(!previewPlaying)}
             onFocus={usesFocus(s.moveId) ? (f) => s.setParam("focus", f) : undefined}
+            witness={witness}
+            onToggleWitness={() => setWitness(!witness)}
           />
         </div>
         <p className="mt-2 text-xs text-muted">

@@ -58,7 +58,7 @@ export function GenerateFrame({ aspect, onFrame, onUseSample }: { aspect: OutAsp
           }
         }}
         placeholder="A lighthouse on a cliff at dusk, 35mm film"
-        className="w-full resize-none rounded border border-line bg-panel px-2.5 py-2 text-sm placeholder:text-muted/70"
+        className="w-full resize-none rounded border border-muted bg-panel px-2.5 py-2 text-sm placeholder:text-muted"
       />
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         <button type="submit" disabled={developing} className="rounded bg-go px-3 py-1.5 text-sm font-medium text-paper hover:bg-go/80 disabled:opacity-50">

@@ -63,6 +63,7 @@ export function ExploreView() {
               recipe={{ frame: hero.frame, depth: hero.depth, moveId: hero.sample.moveId, params: hero.sample.params, seed: 3 }}
               playing={!reduced}
               aspect="16:9"
+              witness
               className="w-full rounded"
             >
               <span className="absolute left-2 top-2 rounded bg-bg/80 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider">
