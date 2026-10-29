@@ -18,7 +18,7 @@ Dailies is an 8x take-home that rebuilds [Higgsfield](https://higgsfield.ai) aro
 
 ## What it is and why
 
-- Research first: [product teardown, voice of the user, stack feasibility, the median rebuild](docs/recon/README.md), with the screens in [`recon/screens/`](recon/screens/).
+- Research first: [product teardown, voice of the user, stack feasibility, the median rebuild](docs/recon/README.md), with the screens in [`recon/screens/`](recon/screens/). Signed-in screens were added after the build, on 29 Oct, as a dated [addendum](docs/recon/05-logged-in-addendum.md).
 - Every call, with its evidence and cost: [DECISIONS.md](DECISIONS.md). Design: [spec](docs/superpowers/specs/2026-10-28-dailies-design.md). Plan: [plan](docs/superpowers/plans/2026-10-28-dailies.md). Spikes: [docs/spikes.md](docs/spikes.md).
 - Higgsfield's moat is curated motion, not its 30-model catalogue. Dailies keeps the motion, makes it exact and free, and borrows the film set's way of working: shoot several takes, keep one.
 

@@ -18,6 +18,7 @@ Self-described "AI-native creative suite". The top nav scrolls sideways with ~24
 - Preset picker: full-pane grid of looping video thumbnails, model tabs, search, category chips (Trending, Effects, Basic Camera Control, Epic Camera Control, Mix).
 - Model dropdown: searchable, badges for resolution and duration range.
 - UNVERIFIED (needs login): progress display, logged-out Generate gate, how History resolves. Changelog mentions "Cancel queued generations" and "Usage History".
+  - *Added 29 Oct, after the build:* the free-account Generate gate is now seen; progress and History still aren't. See [05-logged-in-addendum.md](05-logged-in-addendum.md).
 
 ## Monetization
 | Plan | Price | Credits / month |

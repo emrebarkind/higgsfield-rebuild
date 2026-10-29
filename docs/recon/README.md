@@ -9,6 +9,7 @@ Each file is the condensed report; sources are listed in each.
 | [02-voice-of-user.md](02-voice-of-user.md) | What do real users love and hate about it? |
 | [03-stack-feasibility.md](03-stack-feasibility.md) | What can we actually call for real generation, at what cost and speed? |
 | [04-median-submission.md](04-median-submission.md) | What does the typical rebuild look like, so we can avoid it? |
+| [05-logged-in-addendum.md](05-logged-in-addendum.md) | *Added 29 Oct, after the build:* what a free signed-in account shows (gate, credits, presets) |
 
 ## What the four reports say together
 
