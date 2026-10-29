@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createSingleFlight, exportFileName, exportSize, frameCount, pickExportPath } from '../export/mp4';
+import { createSingleFlight, exportFileName, exportSize, frameCount, pickExportCanvas, pickExportPath } from '../export/mp4';
 
 describe('pickExportPath', () => {
   test('prefers WebCodecs MP4', () => {
@@ -71,5 +71,17 @@ describe('createSingleFlight', () => {
     });
     await expect(run()).rejects.toThrow('boom');
     expect(await run()).toBe('ok');
+  });
+});
+
+describe('pickExportCanvas', () => {
+  test('encodes from an OffscreenCanvas only when it can run WebGL', () => {
+    expect(pickExportCanvas({ encoding: true, offscreenWebgl: true })).toBe('offscreen');
+  });
+  test('Safari 16.4–16.6: VideoEncoder and OffscreenCanvas, but no WebGL on it → a detached <canvas>', () => {
+    expect(pickExportCanvas({ encoding: true, offscreenWebgl: false })).toBe('element');
+  });
+  test('MediaRecorder needs captureStream, so always a <canvas>', () => {
+    expect(pickExportCanvas({ encoding: false, offscreenWebgl: true })).toBe('element');
   });
 });

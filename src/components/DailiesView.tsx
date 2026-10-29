@@ -133,7 +133,7 @@ export function DailiesView() {
         {storageError || readFailed ? (
           <p role="alert" className="text-paper">{NOT_SAVING}</p>
         ) : (
-          <p>Stored on this device. Nothing is uploaded; clearing your browser’s site data removes it too.</p>
+          <p>Stored on this device; clearing your browser’s site data removes it too. Only two buttons send anything out: Generate frame sends your prompt, and Print with AI motion sends the frame.</p>
         )}
         {entries && entries.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-3">

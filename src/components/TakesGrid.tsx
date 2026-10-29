@@ -5,6 +5,7 @@ import { MAX_TAKES, type Shot, type Take } from "@/src/lib/takes";
 import { STRENGTH_CAPS, type MoveParams, type OutAspect } from "@/src/lib/moves";
 import type { Frame } from "@/src/lib/frame";
 import type { DepthMap } from "@/src/lib/depth/client";
+import type { Clock } from "@/src/lib/clock";
 import { TakePlayer } from "./TakePlayer";
 import { Slate } from "./Slate";
 
@@ -16,7 +17,7 @@ interface Props {
   aspect: OutAspect;
   focusedTake: string | null;
   playing: boolean;
-  time: number;
+  clock: Clock;
   onTogglePlay: () => void;
   onFocus: (id: string | null) => void;
   onCircle: (id: string) => void;
@@ -26,7 +27,7 @@ interface Props {
 }
 
 export function TakesGrid(props: Props) {
-  const { shot, takes, frame, depth, aspect, focusedTake, playing, time, onTogglePlay, onFocus, onCircle, onNudge, focusedActions } = props;
+  const { shot, takes, frame, depth, aspect, focusedTake, playing, clock, onTogglePlay, onFocus, onCircle, onNudge, focusedActions } = props;
   if (!shot || !frame || !depth || takes.length === 0) {
     return (
       <div className="rounded border border-dashed border-line p-6 text-center">
@@ -69,7 +70,7 @@ export function TakesGrid(props: Props) {
                   <TakePlayer
                     recipe={{ frame, depth, moveId: shot.moveId, params: take.params, seed: take.seed }}
                     playing={playing}
-                    time={time}
+                    clock={clock}
                     aspect={aspect}
                     className="w-full rounded-sm"
                   />

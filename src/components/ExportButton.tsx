@@ -1,56 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { OutAspect } from "@/src/lib/moves";
 import type { TakeRecipe } from "@/src/lib/render/scene";
-import { createSingleFlight, exportCaps, exportFileName, exportTake, frameCount, pickExportPath } from "@/src/lib/export/mp4";
-
-type Status =
-  | { kind: "idle" }
-  | { kind: "running"; done: number; total: number }
-  | { kind: "done"; url: string; name: string; webm: boolean }
-  | { kind: "error"; message: string };
+import { exportCaps, exportFileName, exportTake, frameCount, pickExportPath } from "@/src/lib/export/mp4";
+import { exportJobs, useExportJob } from "@/src/lib/export/jobs";
 
 const WEBM_NOTE = "Your browser can’t make MP4 — exporting WebM instead.";
 
-export function ExportButton(props: { recipe: TakeRecipe; shot: number; take: number; aspect: OutAspect }) {
-  const { recipe, shot, take, aspect } = props;
+export function ExportButton(props: { takeId: string; recipe: TakeRecipe; shot: number; take: number; aspect: OutAspect }) {
+  const { takeId, recipe, shot, take, aspect } = props;
   const [height, setHeight] = useState<720 | 1080>(1080);
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const status = useExportJob(takeId);
   const [path] = useState(() => (typeof window === "undefined" ? null : pickExportPath(exportCaps())));
-  const abort = useRef<AbortController | null>(null);
-  const live = useRef({ recipe, height, aspect, shot, take });
-  useEffect(() => {
-    live.current = { recipe, height, aspect, shot, take };
-  });
 
-  const doExport = async () => {
-    const { recipe: r, height: h, aspect: a, shot: s, take: t } = live.current;
-    abort.current = new AbortController();
-    setStatus({ kind: "running", done: 0, total: frameCount(r.params.durationS, 30) });
-    try {
-      const blob = await exportTake(r, { height: h, aspect: a, fps: 30 }, (done, total) => setStatus({ kind: "running", done, total }), abort.current.signal);
-      const webm = blob.type === "video/webm";
-      const name = exportFileName(s, t, r.moveId, webm ? "webm" : "mp4");
-      const url = URL.createObjectURL(blob);
-      setStatus({ kind: "done", url, name, webm });
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = name;
-      link.click();
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") setStatus({ kind: "idle" });
-      else setStatus({ kind: "error", message: err instanceof Error ? err.message : String(err) });
-    }
-  };
-  // One export at a time: a double click joins the running one.
-  const runner = useRef<(() => Promise<void>) | null>(null);
-  const run = () => (runner.current ??= createSingleFlight(doExport))();
-
-  // Free the last file when a new one replaces it or the panel goes away.
-  const doneUrl = status.kind === "done" ? status.url : null;
-  useEffect(() => () => void (doneUrl && URL.revokeObjectURL(doneUrl)), [doneUrl]);
-  useEffect(() => () => abort.current?.abort(), []);
+  // The job runs in the store, so focusing another take or switching the aspect doesn't stop it.
+  const run = () =>
+    exportJobs.start(
+      takeId,
+      { total: frameCount(recipe.params.durationS, 30), aspect, height, name: (webm) => exportFileName(shot, take, recipe.moveId, webm ? "webm" : "mp4") },
+      (onProgress, signal) => exportTake(recipe, { height, aspect, fps: 30 }, onProgress, signal),
+    );
 
   if (!path) return <p className="text-sm text-muted">This browser can’t record video, so export isn’t available here.</p>;
   const running = status.kind === "running";
@@ -75,14 +45,14 @@ export function ExportButton(props: { recipe: TakeRecipe; shot: number; take: nu
         <>
           <span role="status" className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
             <span className="h-2 w-2 motion-safe:animate-pulse rounded-full bg-tally" aria-hidden="true" />
-            Rendering {status.done} / {status.total} frames
+            Rendering {status.height}p {status.aspect} · {status.done} / {status.total} frames
           </span>
-          <button type="button" onClick={() => abort.current?.abort()} className="text-xs text-muted underline hover:text-paper">
+          <button type="button" onClick={() => exportJobs.cancel(takeId)} className="text-xs text-muted underline hover:text-paper">
             Cancel
           </button>
         </>
       ) : (
-        <button type="button" onClick={() => void run()} className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg">
+        <button type="button" onClick={run} className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg">
           {path === "mediarecorder-webm" ? "Export WebM" : "Export MP4"} · {aspect}
         </button>
       )}

@@ -36,7 +36,7 @@ export function Studio() {
   const [takesPlay, setTakesPlay] = useState<boolean | null>(null);
   const previewPlaying = previewPlay ?? !reduced;
   const takesPlaying = takesPlay ?? !reduced;
-  const { time, setTime, loopS } = useSyncedClock(s.takes.map((t) => t.params.durationS), takesPlaying);
+  const { clock, loopS } = useSyncedClock(s.takes.map((t) => t.params.durationS), takesPlaying);
 
   const { ensureFrame } = s;
   useEffect(() => ensureFrame(), [ensureFrame]);
@@ -52,7 +52,7 @@ export function Studio() {
         setTakesPlay(!takesPlaying);
       } else if (k === "j" || k === "l") {
         setTakesPlay(false);
-        setTime((t) => Math.min(loopS, Math.max(0, t + (k === "l" ? SCRUB_S : -SCRUB_S))));
+        clock.set((t) => Math.min(loopS, Math.max(0, t + (k === "l" ? SCRUB_S : -SCRUB_S))));
       } else if (/^[1-6]$/.test(k)) {
         const take = s.takes[Number(k) - 1];
         if (take) s.focus(take.id);
@@ -62,7 +62,7 @@ export function Studio() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [s, takesPlaying, loopS, setTime]);
+  }, [s, takesPlaying, loopS, clock]);
 
   // Roll is only ever aria-disabled, never disabled, so keyboard focus isn't lost; the store ignores a press it can't take.
   const rollDisabled = s.rollState.disabled || !s.depth;
@@ -138,7 +138,7 @@ export function Studio() {
             aspect={s.aspect}
             focusedTake={s.focusedTake}
             playing={takesPlaying}
-            time={time}
+            clock={clock}
             onTogglePlay={() => setTakesPlay(!takesPlaying)}
             onFocus={s.focus}
             onCircle={s.circle}
@@ -147,7 +147,8 @@ export function Studio() {
               s.shot && s.shotFrame && s.shotDepth ? (
                 <>
                   <ExportButton
-                    key={`${take.id}-${s.aspect}`}
+                    key={take.id}
+                    takeId={take.id}
                     recipe={{ frame: s.shotFrame, depth: s.shotDepth, moveId: s.shot.moveId, params: take.params, seed: take.seed }}
                     shot={s.shot.number}
                     take={take.number}

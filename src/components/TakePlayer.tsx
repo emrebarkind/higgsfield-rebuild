@@ -4,6 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExter
 import { poseAt, type OutAspect } from "@/src/lib/moves";
 import { createScene, type Scene, type TakeRecipe } from "@/src/lib/render/scene";
 import { frameBitmap } from "@/src/lib/render/bitmap";
+import { watchContextLoss } from "@/src/lib/render/context";
+import { createClock, type Clock } from "@/src/lib/clock";
 
 export const ASPECT_CSS: Record<OutAspect, string> = { "16:9": "16 / 9", "9:16": "9 / 16", "1:1": "1 / 1" };
 /** Pause on the last pose before looping, so the end of a move reads. */
@@ -12,28 +14,30 @@ const HOLD_S = 0.6;
 interface Props {
   recipe: TakeRecipe;
   playing: boolean;
-  /** Seconds since the take started. When given, the parent owns the clock (synced players). */
-  time?: number;
-  onTime?: (seconds: number) => void;
+  /** The parent's clock, in seconds since the take started (synced players). Without one the player keeps its own. */
+  clock?: Clock;
   aspect: OutAspect;
   className?: string;
   children?: ReactNode;
 }
 
-export function TakePlayer({ recipe, playing, time, onTime, aspect, className = "", children }: Props) {
+export function TakePlayer({ recipe, playing, clock, aspect, className = "", children }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
   const own = useRef(0);
-  const live = useRef({ recipe, time, aspect, onTime });
+  const live = useRef({ recipe, clock, aspect });
   useLayoutEffect(() => {
-    live.current = { recipe, time, aspect, onTime };
+    live.current = { recipe, clock, aspect };
   });
+  // The browser dropped this player's WebGL context; bumping `generation` builds a fresh one.
+  const [lost, setLost] = useState(false);
+  const [generation, setGeneration] = useState(0);
 
   const draw = useCallback(() => {
     const s = scene.current;
-    if (!s) return;
-    const { recipe: r, time: tc } = live.current;
-    const seconds = tc ?? own.current;
+    if (!s || s.lost()) return;
+    const { recipe: r, clock: c } = live.current;
+    const seconds = c ? c.get() : own.current;
     const t = Math.min(1, Math.max(0, seconds / r.params.durationS));
     s.setPose(poseAt(r.moveId, r.params, t, r.seed, r.frame.width / r.frame.height));
     s.render();
@@ -48,6 +52,11 @@ export function TakePlayer({ recipe, playing, time, onTime, aspect, className = 
     host.prepend(canvas);
     let gone = false;
     let ro: ResizeObserver | null = null;
+    const reload = () => {
+      setLost(false);
+      setGeneration((g) => g + 1);
+    };
+    const unwatch = watchContextLoss(canvas, () => setLost(true), reload);
     frameBitmap(recipe.frame).then((bmp) => {
       if (gone) return;
       scene.current = createScene(canvas, bmp, recipe.depth, { lensMm: recipe.params.lensMm });
@@ -62,12 +71,13 @@ export function TakePlayer({ recipe, playing, time, onTime, aspect, className = 
     });
     return () => {
       gone = true;
+      unwatch();
       ro?.disconnect();
       scene.current?.dispose();
       scene.current = null;
       canvas.remove();
     };
-  }, [recipe.frame, recipe.depth, recipe.params.lensMm, draw]);
+  }, [recipe.frame, recipe.depth, recipe.params.lensMm, draw, generation]);
 
   // Re-fit when the output aspect changes.
   useEffect(() => {
@@ -77,14 +87,16 @@ export function TakePlayer({ recipe, playing, time, onTime, aspect, className = 
     draw();
   }, [aspect, draw]);
 
-  // Controlled: draw whenever the parent's clock or the recipe changes.
+  // Controlled: redraw on each tick of the parent's clock, and when the recipe changes.
   useEffect(() => {
-    if (time !== undefined) draw();
-  }, [time, recipe, draw]);
+    if (!clock) return;
+    draw();
+    return clock.subscribe(draw);
+  }, [clock, recipe, draw]);
 
   // Uncontrolled: run our own real-time clock while playing; otherwise draw the current pose.
   useEffect(() => {
-    if (time !== undefined) return;
+    if (clock) return;
     if (!playing) {
       draw();
       return;
@@ -95,39 +107,52 @@ export function TakePlayer({ recipe, playing, time, onTime, aspect, className = 
       own.current += (now - last) / 1000;
       last = now;
       if (own.current > live.current.recipe.params.durationS + HOLD_S) own.current = 0;
-      live.current.onTime?.(own.current);
       draw();
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, time === undefined, recipe, draw]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playing, clock, recipe, draw]);
 
   return (
     <div ref={wrap} className={`relative overflow-hidden bg-[#0b0b0a] ${className}`} style={{ aspectRatio: ASPECT_CSS[aspect] }}>
       {children}
+      {lost && (
+        // A span, not a button: players sit inside the take buttons. A click here reloads and goes no further.
+        <span
+          className="absolute inset-0 flex cursor-pointer items-center justify-center bg-bg/85 p-3 text-center font-mono text-xs uppercase tracking-wider text-paper"
+          role="status"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setLost(false);
+            setGeneration((g) => g + 1);
+          }}
+        >
+          Paused · the browser needed the graphics memory back. Tap to reload.
+        </span>
+      )}
     </div>
   );
 }
 
 /** One clock for several players: real time, looping after the longest take plus a short hold. */
 export function useSyncedClock(durationsS: number[], playing: boolean) {
-  const [time, setTime] = useState(0);
+  const [clock] = useState(createClock);
   const loop = Math.max(0, ...durationsS) + HOLD_S;
   useEffect(() => {
     if (!playing || loop <= HOLD_S) return;
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
-      const dt = (now - last) / 1000;
+      clock.advance((now - last) / 1000, loop);
       last = now;
-      setTime((t) => (t + dt > loop ? 0 : t + dt));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, loop]);
-  return { time, setTime, loopS: loop };
+  }, [clock, playing, loop]);
+  return { clock, loopS: loop };
 }
 
 const reducedQuery = "(prefers-reduced-motion: reduce)";

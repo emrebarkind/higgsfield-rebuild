@@ -19,6 +19,8 @@ export interface Scene {
   render(): void;
   resize(w: number, h: number, aspect: OutAspect): void;
   dispose(): void;
+  /** The browser dropped this scene's WebGL context; nothing it draws shows. */
+  lost(): boolean;
   canvas: HTMLCanvasElement | OffscreenCanvas;
 }
 
@@ -143,6 +145,7 @@ export function createScene(
 
   return {
     canvas,
+    lost: () => renderer.getContext().isContextLost(),
     setPose: (p) => applyPose(camera, p),
     render() {
       renderer.setScissorTest(false);

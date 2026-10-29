@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { fitFrame, type MoveId, type MoveParams, type OutAspect } from "@/src/lib/moves";
 import type { Frame } from "@/src/lib/frame";
 import type { DepthMap, DepthStatus } from "@/src/lib/depth/client";
@@ -63,12 +63,13 @@ export function Preview(props: Props) {
     onFocus({ x: clamp(params.focus.x + d[0]), y: clamp(params.focus.y + d[1]) });
   };
 
-  const ready = frame && depth;
+  // A stable recipe: a new one restarts the player's clock.
+  const recipe = useMemo(() => (frame && depth ? { frame, depth, moveId, params, seed: 0 } : null), [frame, depth, moveId, params]);
   return (
     <div className="relative w-full">
-      {ready ? (
-        <TakePlayer recipe={{ frame, depth, moveId, params, seed: 0 }} playing={playing} aspect={aspect} className="w-full">
-          {showDepth && <DepthLayer box={box!} depth={depth} />}
+      {recipe ? (
+        <TakePlayer recipe={recipe} playing={playing} aspect={aspect} className="w-full">
+          {showDepth && <DepthLayer box={box!} depth={recipe.depth} />}
           {showGuides && <Guides />}
           <FocusLayer box={box!} focus={params.focus} onClick={pickFocus} onKey={moveFocus} interactive={!!onFocus} />
         </TakePlayer>
@@ -88,7 +89,7 @@ export function Preview(props: Props) {
           </div>
         </div>
       )}
-      {ready && (
+      {recipe && (
         <>
           <button
             type="button"

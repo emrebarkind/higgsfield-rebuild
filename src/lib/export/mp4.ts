@@ -19,6 +19,26 @@ export function pickExportPath(caps: { videoEncoder: boolean; mediaRecorder: boo
   return null;
 }
 
+/** Safari 16.4–16.6 has VideoEncoder and OffscreenCanvas but no WebGL on OffscreenCanvas (that came in 17). */
+export function pickExportCanvas(caps: { encoding: boolean; offscreenWebgl: boolean }): 'offscreen' | 'element' {
+  return caps.encoding && caps.offscreenWebgl ? 'offscreen' : 'element';
+}
+
+let offscreenWebgl: boolean | undefined;
+function offscreenCanRunWebgl(): boolean {
+  if (offscreenWebgl === undefined) {
+    try {
+      const probe = new OffscreenCanvas(1, 1);
+      const gl = (probe.getContext('webgl2') ?? probe.getContext('webgl')) as WebGLRenderingContext | WebGL2RenderingContext | null;
+      offscreenWebgl = gl != null;
+      gl?.getExtension('WEBGL_lose_context')?.loseContext(); // free the probe's context now
+    } catch {
+      offscreenWebgl = false;
+    }
+  }
+  return offscreenWebgl;
+}
+
 export function exportCaps() {
   return { videoEncoder: typeof VideoEncoder !== 'undefined', mediaRecorder: typeof MediaRecorder !== 'undefined' };
 }
@@ -63,6 +83,7 @@ async function supportedConfig(width: number, height: number, fps: number): Prom
   return null;
 }
 
+const CONTEXT_LOST = 'the browser took back its graphics memory mid-render';
 const aborted = () => new DOMException('Export cancelled', 'AbortError');
 const yieldToUi = () => new Promise((r) => setTimeout(r, 0));
 
@@ -79,13 +100,15 @@ export async function exportTake(
   if (!path) throw new Error('This browser can’t record video.');
   const config = path === 'webcodecs-mp4' ? await supportedConfig(width, height, opts.fps) : null;
 
-  // OffscreenCanvas when encoding; a (detached) <canvas> when MediaRecorder needs captureStream.
-  const canvas: HTMLCanvasElement | OffscreenCanvas =
-    config && typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+  // OffscreenCanvas when encoding and it can run WebGL; otherwise a detached <canvas>
+  // (MediaRecorder needs captureStream; VideoFrame takes either).
+  const where = pickExportCanvas({ encoding: !!config, offscreenWebgl: typeof OffscreenCanvas !== 'undefined' && offscreenCanRunWebgl() });
+  const canvas: HTMLCanvasElement | OffscreenCanvas = where === 'offscreen' ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   const scene = createScene(canvas, bitmap, recipe.depth, { lensMm: recipe.params.lensMm, preserveDrawingBuffer: true });
   scene.resize(width, height, opts.aspect);
   const aspect = recipe.frame.width / recipe.frame.height;
   const draw = (i: number) => {
+    if (scene.lost()) throw new Error(CONTEXT_LOST);
     scene.setPose(poseAt(recipe.moveId, recipe.params, i / (n - 1), recipe.seed, aspect));
     scene.render();
   };
