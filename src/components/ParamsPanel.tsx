@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MOVES, STRENGTH_CAPS, usesFocus, type Easing, type LensMm, type MoveId, type MoveParams } from "@/src/lib/moves";
+import { MOVES, STRENGTH_CAPS, focusMatters, type Easing, type LensMm, type MoveId, type MoveParams } from "@/src/lib/moves";
 
 const EASINGS: { id: Easing; label: string }[] = [
   { id: "linear", label: "Linear" },
@@ -45,7 +45,14 @@ export function ParamsPanel({ moveId, params, setParam }: { moveId: MoveId; para
         display={params.handheld === 0 ? "Locked off" : `${Math.round(params.handheld * 100)}%`}
         onChange={(v) => setParam("handheld", v)}
       />
-      {usesFocus(moveId) ? (
+      <label className="flex items-start gap-3 text-sm">
+        <input type="checkbox" checked={!!params.rack} onChange={(e) => setParam("rack", e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--circle)]" />
+        <span>
+          Rack focus
+          <span className="block text-xs text-muted">Each take pulls focus from the background onto your focus point, using the photo’s depth.</span>
+        </span>
+      </label>
+      {focusMatters(moveId, params) ? (
         <>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted">Focus point</span>
@@ -60,10 +67,12 @@ export function ParamsPanel({ moveId, params, setParam }: { moveId: MoveId; para
               )}
             </span>
           </div>
-          <p className="-mt-2 text-xs text-muted">Click the preview (or focus it and use the arrow keys) to set what the camera aims at.</p>
+          <p className="-mt-2 text-xs text-muted">
+            Click the preview (or focus it and use the arrow keys) to set what the camera {params.rack ? "focuses on" : "aims at"}.
+          </p>
         </>
       ) : (
-        <p className="text-xs text-muted">{MOVES[moveId].label} frames the whole image, so it has no focus point.</p>
+        <p className="text-xs text-muted">{MOVES[moveId].label} frames the whole image, so without rack focus it has no focus point.</p>
       )}
     </fieldset>
   );

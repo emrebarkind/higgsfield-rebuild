@@ -5,6 +5,7 @@ import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 import { poseAt, type MoveId, type OutAspect } from '../moves';
 import { createScene, type TakeRecipe } from '../render/scene';
 import { frameBitmap } from '../render/bitmap';
+import { rackFocus } from '../focus';
 
 export type ExportPath = 'webcodecs-mp4' | 'mediarecorder-webm';
 export interface ExportOptions {
@@ -110,6 +111,7 @@ export async function exportTake(
   const draw = (i: number) => {
     if (scene.lost()) throw new Error(CONTEXT_LOST);
     scene.setPose(poseAt(recipe.moveId, recipe.params, i / (n - 1), recipe.seed, aspect));
+    scene.setFocus(rackFocus(recipe.depth, recipe.params, i / (n - 1)));
     scene.render();
   };
 

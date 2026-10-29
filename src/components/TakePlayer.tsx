@@ -7,6 +7,7 @@ import { frameBitmap } from "@/src/lib/render/bitmap";
 import { watchContextLoss } from "@/src/lib/render/context";
 import { createClock, type Clock } from "@/src/lib/clock";
 import { witnessPath } from "@/src/lib/render/witness";
+import { rackFocus } from "@/src/lib/focus";
 import { witnessAllowed } from "@/src/lib/flags";
 
 export const ASPECT_CSS: Record<OutAspect, string> = { "16:9": "16 / 9", "9:16": "9 / 16", "1:1": "1 / 1" };
@@ -49,6 +50,7 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
     const seconds = c ? c.get() : own.current;
     const t = Math.min(1, Math.max(0, seconds / r.params.durationS));
     s.setPose(poseAt(r.moveId, r.params, t, r.seed, r.frame.width / r.frame.height));
+    s.setFocus(rackFocus(r.depth, r.params, t));
     s.render();
   }, []);
 
@@ -70,7 +72,7 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
       if (gone) return;
       scene.current = createScene(canvas, bmp, recipe.depth, { lensMm: recipe.params.lensMm, witness: withWitness });
       const size = () => {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = playerDpr(live.current.recipe);
         const w = Math.round(host.clientWidth * dpr);
         const h = Math.round(host.clientHeight * dpr);
         scene.current?.resize(w, h, live.current.aspect);
@@ -103,7 +105,7 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
   // Re-fit when the output aspect changes.
   useEffect(() => {
     const host = wrap.current!;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = playerDpr(live.current.recipe);
     scene.current?.resize(Math.round(host.clientWidth * dpr), Math.round(host.clientHeight * dpr), aspect);
     draw();
   }, [aspect, draw]);
@@ -183,6 +185,16 @@ export function useSyncedClock(durationsS: number[], playing: boolean) {
     return () => cancelAnimationFrame(raf);
   }, [clock, playing, loop]);
   return { clock, loopS: loop };
+}
+
+/**
+ * Device pixels per CSS pixel for a player. Rack focus gathers 12 depth-weighted
+ * taps per pixel; with a preview, six takes and the sample reel all racking at
+ * a retina 2× the GPU fell over, so racking players draw at 1×. Export is
+ * unaffected: it always renders at 1080p.
+ */
+function playerDpr(recipe: TakeRecipe): number {
+  return Math.min(window.devicePixelRatio || 1, recipe.params.rack ? 1 : 2);
 }
 
 function useMinWidth(px: number): boolean {

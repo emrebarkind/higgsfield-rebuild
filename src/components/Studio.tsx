@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { NOT_SAVING, useStudio } from "@/src/lib/useStudio";
-import { usesFocus, type OutAspect } from "@/src/lib/moves";
+import { focusMatters, type OutAspect } from "@/src/lib/moves";
 import { FrameInput } from "./FrameInput";
 import { MoveStrip } from "./MoveStrip";
 import { ParamsPanel } from "./ParamsPanel";
@@ -119,7 +119,7 @@ export function Studio() {
             aspect={s.aspect}
             playing={previewPlaying}
             onTogglePlay={() => setPreviewPlay(!previewPlaying)}
-            onFocus={usesFocus(s.moveId) ? (f) => s.setParam("focus", f) : undefined}
+            onFocus={focusMatters(s.moveId, s.base) ? (f) => s.setParam("focus", f) : undefined}
             witness={witness}
             onToggleWitness={() => setWitness(!witness)}
           />

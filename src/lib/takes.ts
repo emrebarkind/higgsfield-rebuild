@@ -1,4 +1,4 @@
-import { STRENGTH_CAPS, usesFocus, type MoveId, type MoveParams } from './moves';
+import { STRENGTH_CAPS, focusMatters, type MoveId, type MoveParams } from './moves';
 
 // A shot is frame + move + base params, frozen at its first roll. Takes are
 // seeded variations of that base: recipes, rendered live, never stored as video.
@@ -47,7 +47,8 @@ function sameParams(a: MoveParams, b: MoveParams, withFocus: boolean): boolean {
     a.easing === b.easing &&
     a.lensMm === b.lensMm &&
     (!withFocus || (a.focus.x === b.focus.x && a.focus.y === b.focus.y)) &&
-    a.handheld === b.handheld
+    a.handheld === b.handheld &&
+    !!a.rack === !!b.rack
   );
 }
 
@@ -56,7 +57,7 @@ export function needsNewShot(
   draft: { frameId: string; moveId: MoveId; base: MoveParams },
 ): boolean {
   if (!shot) return true;
-  return shot.frameId !== draft.frameId || shot.moveId !== draft.moveId || !sameParams(shot.base, draft.base, usesFocus(shot.moveId));
+  return shot.frameId !== draft.frameId || shot.moveId !== draft.moveId || !sameParams(shot.base, draft.base, focusMatters(shot.moveId, shot.base));
 }
 
 /** How takes differ, the way real takes do: a little strength, timing and shake. */

@@ -27,20 +27,24 @@ export const SAMPLES: Sample[] = [
     'landscape',
     'A misty mountain lake at sunrise, pine trees in the foreground, mountains layered into the distance, cinematic wide shot',
     'push-in',
+    { focus: { x: 0.72, y: 0.62 } }, // the near pines and shore: focus racks off the far mountains onto them
   ),
   sample(
     'portrait',
     'Portrait of a woman in a yellow raincoat on a rainy city street at night, neon reflections, shallow depth of field, 35mm film still',
     'dolly-zoom',
+    { focus: { x: 0.5, y: 0.4 } }, // her face
   ),
   sample(
     'product',
     'A ceramic coffee cup on a wooden table by a window, soft morning light, studio product photo, background softly out of focus',
     'orbit',
+    { focus: { x: 0.5, y: 0.62 } }, // the cup
   ),
   sample(
     'interior',
     'A quiet library reading room with long wooden tables, green lamps and tall bookshelves receding into the distance, warm light',
     'crane-up',
+    { focus: { x: 0.3, y: 0.82 } }, // the nearest table
   ),
 ];

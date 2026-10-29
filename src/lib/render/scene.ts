@@ -6,6 +6,7 @@ import { baseFovDeg, DEPTH_SCALE, fitFrame, type CameraPose, type LensMm, type M
 import type { Frame } from '../frame';
 import type { DepthMap } from '../depth/client';
 import { insetRect, witnessView } from './witness';
+import { RACK } from '../focus';
 
 export interface TakeRecipe {
   frame: Frame;
@@ -22,6 +23,8 @@ export interface Scene {
   dispose(): void;
   /** The browser dropped this scene's WebGL context; nothing it draws shows. */
   lost(): boolean;
+  /** Rack focus for this frame (rackFocus), or null for a sharp frame. */
+  setFocus(f: { focusDepth: number } | null): void;
   /** Witness scenes only: the path the shot camera travels (poseAt samples). */
   setWitnessPath(poses: CameraPose[]): void;
   /** Witness scenes only: the inset's rect in canvas pixels (GL origin bottom-left). */
@@ -102,11 +105,39 @@ const INSET_BG = '#111111';
 const MIN_INSET = 160;
 const WITNESS_LAYER = 1;
 
+// Rack focus: a depth-weighted gather around each pixel. Off (blur = 0) it is
+// the plain texture lookup it always was. A tap only counts as far as its own
+// blur reaches, so a sharp subject doesn't bleed into a blurred background.
 const fragmentShader = /* glsl */ `
   uniform sampler2D map;
+  uniform sampler2D depthMap;
+  uniform float blur;
+  uniform float focusDepth;
+  uniform float cocGain;
+  uniform float cocMax;
+  uniform vec2 texel;
   varying vec2 vUv;
+  const vec2 DISC[12] = vec2[12](
+    vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621),
+    vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893),
+    vec2(0.507, 0.064), vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598)
+  );
+  float coc(float d) { return min(abs(d - focusDepth) * cocGain, cocMax); }
   void main() {
-    gl_FragColor = texture2D(map, vUv);
+    vec4 c = texture2D(map, vUv);
+    if (blur <= 0.0) { gl_FragColor = c; return; }
+    float r0 = coc(texture2D(depthMap, clamp(vUv, 0.0, 1.0)).r) * blur;
+    if (r0 < 0.35) { gl_FragColor = c; return; }
+    vec4 acc = c;
+    float wsum = 1.0;
+    for (int i = 0; i < 12; i++) {
+      vec2 uv = vUv + DISC[i] * r0 * texel;
+      float r = coc(texture2D(depthMap, clamp(uv, 0.0, 1.0)).r) * blur;
+      float w = clamp(r / r0, 0.0, 1.0);
+      acc += texture2D(map, uv) * w;
+      wsum += w;
+    }
+    gl_FragColor = acc / wsum;
   }
 `;
 
@@ -152,6 +183,11 @@ export function createScene(
       depthScale: { value: DEPTH_SCALE },
       baseDist: { value: 1 / Math.tan((baseFovDeg(lens) / 2) * RAD) },
       overscan: { value: OVERSCAN },
+      blur: { value: 0 },
+      focusDepth: { value: 0 },
+      cocGain: { value: RACK.gain },
+      cocMax: { value: RACK.maxPx },
+      texel: { value: new THREE.Vector2(1 / frame.width, 1 / frame.height) },
     },
   });
   const geometry = new THREE.PlaneGeometry(2 * aspect * OVERSCAN, 2 * OVERSCAN, SEGMENTS, SEGMENTS);
@@ -166,6 +202,10 @@ export function createScene(
     canvas,
     lost: () => renderer.getContext().isContextLost(),
     setPose: (p) => applyPose(camera, p),
+    setFocus(f) {
+      material.uniforms.blur.value = f ? 1 : 0;
+      material.uniforms.focusDepth.value = f?.focusDepth ?? 0;
+    },
     render() {
       renderer.setScissorTest(false);
       renderer.clear();

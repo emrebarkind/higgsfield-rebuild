@@ -67,13 +67,14 @@ describe('needsNewShot', () => {
 });
 
 describe('needsNewShot and the focus point', () => {
-  test('moving the focus only starts a new shot for moves that use it', () => {
-    const f = { ...base, focus: { x: 0.2, y: 0.7 } };
-    const dolly = newShot('frame-a', 'dolly-zoom', base, 1);
+  test('without rack focus, moving the focus only starts a new shot for moves that use it', () => {
+    const still = { ...base, rack: false };
+    const f = { ...still, focus: { x: 0.2, y: 0.7 } };
+    const dolly = newShot('frame-a', 'dolly-zoom', still, 1);
     expect(needsNewShot(dolly, { frameId: 'frame-a', moveId: 'dolly-zoom', base: f })).toBe(false);
-    const pan = newShot('frame-a', 'pan-left', base, 1);
+    const pan = newShot('frame-a', 'pan-left', still, 1);
     expect(needsNewShot(pan, { frameId: 'frame-a', moveId: 'pan-left', base: f })).toBe(false);
-    const push = newShot('frame-a', 'push-in', base, 1);
+    const push = newShot('frame-a', 'push-in', still, 1);
     expect(needsNewShot(push, { frameId: 'frame-a', moveId: 'push-in', base: f })).toBe(true);
   });
 });
@@ -128,5 +129,21 @@ describe('nudgeTake', () => {
     const r = nudgeTake(shot, takes[0], { ...takes[0].params, strength: 3 });
     expect(r.take.params.strength).toBe(STRENGTH_CAPS.orbit);
     expect(() => nudgeTake(r.shot, takes[0], takes[0].params)).toThrow(RangeError);
+  });
+});
+
+describe('needsNewShot with rack focus', () => {
+  const frameId = 'f';
+  const pan = { ...MOVES['pan-left'].defaults, rack: true };
+  const shot = newShot(frameId, 'pan-left', pan, 1);
+
+  test('moving the focus point starts a new shot when focus racks onto it, even on a pan', () => {
+    expect(needsNewShot(shot, { frameId, moveId: 'pan-left', base: { ...pan, focus: { x: 0.2, y: 0.3 } } })).toBe(true);
+    const noRack = newShot(frameId, 'pan-left', { ...pan, rack: false }, 1);
+    expect(needsNewShot(noRack, { frameId, moveId: 'pan-left', base: { ...pan, rack: false, focus: { x: 0.2, y: 0.3 } } })).toBe(false);
+  });
+
+  test('switching rack focus on or off starts a new shot', () => {
+    expect(needsNewShot(shot, { frameId, moveId: 'pan-left', base: { ...pan, rack: false } })).toBe(true);
   });
 });

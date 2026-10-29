@@ -24,6 +24,8 @@ export interface MoveParams {
   lensMm: LensMm;
   focus: { x: number; y: number };
   handheld: number;
+  /** Rack focus from the background onto the focus point during the move. Missing on older shots: off. */
+  rack?: boolean;
 }
 export interface CameraPose {
   x: number;
@@ -119,6 +121,11 @@ const FOCUS_MOVES: ReadonlySet<MoveId> = new Set(['push-in', 'pull-back', 'crash
 /** Whether the focus point changes this move (static, pans and dolly zoom ignore it). */
 export function usesFocus(id: MoveId): boolean {
   return FOCUS_MOVES.has(id);
+}
+
+/** Whether the focus point matters to this take: the move aims at it, or focus racks onto it. */
+export function focusMatters(id: MoveId, p: Pick<MoveParams, 'rack'>): boolean {
+  return usesFocus(id) || !!p.rack;
 }
 
 export function poseAt(id: MoveId, p: MoveParams, t: number, seed = 0, frameAspect = 1): CameraPose {
@@ -223,6 +230,7 @@ const defaults = (over: Partial<MoveParams> = {}): MoveParams => ({
   lensMm: 35,
   focus: { x: 0.5, y: 0.5 },
   handheld: 0.15,
+  rack: true,
   ...over,
 });
 
