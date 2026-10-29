@@ -3,6 +3,8 @@
 // preview and the MP4 render match. Camera shots come from Dailies' own
 // renderer (createScene) and witness cam, drawn in as images.
 import { poseAt } from '../lib/moves';
+import { rackFocus } from '../lib/focus';
+import type { DepthMap } from '../lib/depth/protocol';
 import type { Scene } from '../lib/render/scene';
 import { COLORS, COPY, FILM, KEEPER, T, TAKES } from './config';
 
@@ -13,6 +15,7 @@ export interface FilmAssets {
   shot: Scene;
   /** Large scene with the witness inset, cropped out for the witness view. */
   witness: Scene;
+  depth: DepthMap;
   frameAspect: number;
   fonts: { display: string; ui: string; mono: string };
 }
@@ -43,8 +46,8 @@ const MONITOR: Box = { x: 820, y: 250, w: 980, h: 551 };
 const TAKE_W = 540;
 const TAKE_H = 304;
 const TAKE_BOXES: Box[] = [0, 1, 2].map((i) => ({ x: 110 + i * (TAKE_W + 40), y: 420, w: TAKE_W, h: TAKE_H }));
-const SHOT_BIG: Box = { x: 110, y: 300, w: 960, h: 540 };
-const WITNESS_BIG: Box = { x: 1110, y: 300, w: 700, h: 438 };
+const SHOT_BIG: Box = { x: 110, y: 330, w: 960, h: 540 };
+const WITNESS_BIG: Box = { x: 1110, y: 330, w: 700, h: 438 };
 const CLOSE_SHOT: Box = { x: 520, y: 110, w: 880, h: 495 };
 const CLOSE_WITNESS: Box = { x: 1210, y: 80, w: 330, h: 206 };
 
@@ -129,6 +132,7 @@ function shotAt(a: FilmAssets, take: number, k: number) {
 /** Render the shot camera at pose k and draw it into box, clipped to rounded corners. */
 function drawShot(ctx: Ctx, a: FilmAssets, take: number, k: number, b: Box, alpha = 1) {
   a.shot.setPose(shotAt(a, take, k));
+  a.shot.setFocus(rackFocus(a.depth, TAKES[take].params, k));
   a.shot.render();
   ctx.save();
   ctx.globalAlpha *= alpha;
@@ -142,6 +146,7 @@ function drawShot(ctx: Ctx, a: FilmAssets, take: number, k: number, b: Box, alph
 /** Render the witness scene and draw its inset (the witness cam's view) into box. */
 function drawWitness(ctx: Ctx, a: FilmAssets, k: number, b: Box, alpha: number) {
   a.witness.setPose(shotAt(a, KEEPER, k));
+  a.witness.setFocus(rackFocus(a.depth, TAKES[KEEPER].params, k));
   a.witness.render();
   const r = a.witness.witnessRect();
   if (!r) return;
@@ -285,8 +290,8 @@ export function drawFilmFrame(ctx: Ctx, t: number, a: FilmAssets) {
     }
   }
 
-  // Witness cam (17–23).
-  if (t >= T.witness && t < T.close + 1.4) {
+  // Witness cam (17–23), then the same shot and witness cam settle into the closing composition.
+  if (t >= T.witness) {
     const a3 = life(t, T.witness + 0.3, T.close);
     label(ctx, COPY.witness.label, L, 150, f, a3);
     kinetic(ctx, COPY.witness.headline, L, 228, 64, t, T.witness + 0.3, f.display, 1 - seg(t, T.close - 0.4, T.close));
@@ -301,7 +306,7 @@ export function drawFilmFrame(ctx: Ctx, t: number, a: FilmAssets) {
     }
     const wIn = out3(seg(t, 17.5, 18.3));
     const wBox = lerpBox({ ...WITNESS_BIG, y: WITNESS_BIG.y + (1 - wIn) * 40 }, CLOSE_WITNESS, settle);
-    if (t < T.close + 1.4) drawWitness(ctx, a, kk, wBox, wIn);
+    drawWitness(ctx, a, kk, wBox, wIn);
 
     // The human action, explicit: Roll → Circle → Export.
     const stepsA = life(t, 18.4, T.close);

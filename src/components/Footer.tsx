@@ -9,6 +9,7 @@ const PRODUCT = [
   { href: "/moves", label: "Moves" },
   { href: "/dailies", label: "Dailies" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/film", label: "Product film" },
 ];
 
 const MADE = [

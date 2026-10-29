@@ -1,6 +1,7 @@
 // The 30-second product film (docs/film/BRIEF.md): every colour, word and
 // timing in one place. Times are in seconds.
 import { MOVES, type MoveParams } from '../lib/moves';
+import { SAMPLES } from '../lib/samples';
 
 export const FILM = { width: 1920, height: 1080, fps: 30, durationS: 30 };
 
@@ -17,7 +18,7 @@ export const COLORS = {
 
 export const COPY = {
   open: ['A still.', 'A real camera.'],
-  studio: { label: 'Studio', headline: ['Your photo.', 'A real camera move.'], depth: 'Reading depth · in your browser', live: 'Live · Push in · 35mm' },
+  studio: { label: 'Studio', headline: ['Your photo.', 'A real', 'camera move.'], depth: 'Reading depth · in your browser', live: 'Live · Push in · 35mm · Rack focus' },
   takes: { label: 'Takes', headline: ['Roll three.', 'Keep one.'], roll: 'Roll 3 takes', circled: 'Circled' },
   witness: {
     label: 'Witness cam',
@@ -34,8 +35,8 @@ export const COPY = {
 /** Scene boundaries. */
 export const T = { studio: 4, takes: 12, witness: 17, close: 23, hold: 27 };
 
-/** The three takes: the same push-in, varied the way rolled takes vary. Take 2 is the keeper. */
-const base: MoveParams = { ...MOVES['push-in'].defaults, lensMm: 35 };
+/** The three takes: the landscape sample's push-in with rack focus onto the near pines, varied the way rolled takes vary. Take 2 is the keeper. */
+const base: MoveParams = { ...SAMPLES[0].params, lensMm: 35, rack: true };
 export const TAKES: { params: MoveParams; seed: number }[] = [
   { params: { ...base, strength: 0.5, handheld: 0.12 }, seed: 11 },
   { params: { ...base, strength: 0.62, handheld: 0.2 }, seed: 12 },
