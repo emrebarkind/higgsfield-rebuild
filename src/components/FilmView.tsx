@@ -120,9 +120,12 @@ export function FilmView() {
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6">
       <h1 className="font-display text-3xl font-bold uppercase tracking-wide">Product film</h1>
+      <p className="mt-1 max-w-2xl text-sm text-muted">30 seconds, 1920×1080. Every camera shot in it was rendered by Dailies’ own renderer.</p>
+      <video src="/film/dailies-30s.mp4" poster="/film/poster.jpg" controls playsInline muted autoPlay loop className="mt-4 w-full rounded border border-line bg-white" />
+      <h2 className="mt-10 font-display text-2xl font-bold uppercase tracking-wide">The same film, rendered live</h2>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        30 seconds, 1920×1080. Every camera shot in it is rendered right now by Dailies’ own renderer and witness cam, and the MP4 is encoded in
-        your browser, the same way a take is exported.
+        Below, the film is drawn right now in your browser by the renderer, witness cam and rack focus, and “Render MP4” encodes it here, the
+        same way a take is exported.
       </p>
       <canvas ref={canvas} width={FILM.width} height={FILM.height} className="mt-4 w-full rounded border border-line bg-white" aria-label="Dailies product film" />
       <div className="mt-3 flex flex-wrap items-center gap-3">

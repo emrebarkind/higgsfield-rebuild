@@ -76,6 +76,16 @@ export function ExploreView() {
         </figure>
       </section>
 
+      <section aria-label="Product film" className="mt-14">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <h2 className="font-display text-2xl font-bold uppercase tracking-wide">The 30-second film</h2>
+          <Link href="/film" className="text-sm text-muted underline hover:text-paper">
+            How it was made →
+          </Link>
+        </div>
+        <video src="/film/dailies-30s.mp4" poster="/film/poster.jpg" controls playsInline muted preload="metadata" className="mt-4 w-full rounded border border-line bg-white" />
+      </section>
+
       {/* One card per tool, the way a platform shows its sections. */}
       <section aria-label="What you can do" className="mt-14">
         <h2 className="font-display text-2xl font-bold uppercase tracking-wide">What you can do</h2>
