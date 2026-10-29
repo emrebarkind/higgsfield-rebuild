@@ -4,6 +4,8 @@
 
 Photo in, real camera move out. Pick a move, roll 3 versions, keep the best, download a 1080p MP4. Everything runs in your browser; nothing costs credits.
 
+**Sections:** [Explore](https://higgsfield-rebuild-cyan.vercel.app/explore) (the tour) · [Studio](https://higgsfield-rebuild-cyan.vercel.app/) (frame → move → takes → MP4) · [Frames](https://higgsfield-rebuild-cyan.vercel.app/frames) (text to frame on a free GPU) · [Moves](https://higgsfield-rebuild-cyan.vercel.app/moves) (the nine moves, by kind) · [Dailies](https://higgsfield-rebuild-cyan.vercel.app/dailies) (your history) · [Pricing](https://higgsfield-rebuild-cyan.vercel.app/pricing) (free, and why). The same jobs Higgsfield splits into Explore, Image, Video, presets, History and Pricing, in Dailies' own look ([why not a copy](docs/superpowers/specs/2026-10-29-platform-breadth.md)).
+
 ## Try it in 60 seconds
 
 1. Open the link. A sample frame is already moving (a push-in). No model download is needed for the samples.

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { FrameGenError, frameSize, generateFrame, validatePrompt, type GenClient } from '../framegen';
+import { FrameGenError, describeFrameGenError, frameSize, generateFrame, validatePrompt, type GenClient } from '../framegen';
 
 describe('validatePrompt', () => {
   test('rejects an empty prompt', () => {
@@ -94,5 +94,24 @@ describe('generateFrame', () => {
     const client = fakeClient([{ type: 'status', stage: 'complete' }]);
     const err = await generateFrame('a car', '16:9', 1, undefined, { connect: async () => client }).catch((e) => e);
     expect(err.kind).toBe('upstream');
+  });
+});
+
+describe('describeFrameGenError', () => {
+  test('a used-up quota says so and points to upload', () => {
+    const d = describeFrameGenError(new FrameGenError('rate-limited', 'You have exceeded your GPU quota'));
+    expect(d.message).toMatch(/quota/i);
+    expect(d.message).toMatch(/upload/i);
+    expect(d.detail).toBe('You have exceeded your GPU quota');
+  });
+
+  test('any other failure offers try again or upload, with the reason', () => {
+    const d = describeFrameGenError(new FrameGenError('upstream', 'The free GPU service didn’t answer.'));
+    expect(d.message).toBe('Couldn’t generate that frame — try again or upload one.');
+    expect(d.detail).toBe('The free GPU service didn’t answer.');
+  });
+
+  test('a non-FrameGenError is treated as upstream', () => {
+    expect(describeFrameGenError(new TypeError('Failed to fetch')).detail).toMatch(/Failed to fetch/);
   });
 });

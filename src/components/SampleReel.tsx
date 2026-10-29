@@ -8,14 +8,11 @@ import { loadDepthAsset } from "@/src/lib/depth/asset";
 import type { DepthMap } from "@/src/lib/depth/client";
 import { TakePlayer, usePrefersReducedMotion } from "./TakePlayer";
 
-type Loaded = { sample: Sample; frame: Frame; depth: DepthMap };
+export type LoadedSample = { sample: Sample; frame: Frame; depth: DepthMap };
 
-export function SampleReel({ onUse }: { onUse: (s: Sample) => void }) {
-  const reduced = usePrefersReducedMotion();
-  const [items, setItems] = useState<Loaded[]>([]);
-  const [playing, setPlaying] = useState<boolean | null>(null);
-  const isPlaying = playing ?? !reduced;
-
+/** The samples with their frames and pre-computed depth, ready to play; empty until loaded (or if loading fails). */
+export function useLoadedSamples(): LoadedSample[] {
+  const [items, setItems] = useState<LoadedSample[]>([]);
   useEffect(() => {
     let gone = false;
     Promise.all(
@@ -32,6 +29,14 @@ export function SampleReel({ onUse }: { onUse: (s: Sample) => void }) {
       gone = true;
     };
   }, []);
+  return items;
+}
+
+export function SampleReel({ onUse }: { onUse: (s: Sample) => void }) {
+  const reduced = usePrefersReducedMotion();
+  const items = useLoadedSamples();
+  const [playing, setPlaying] = useState<boolean | null>(null);
+  const isPlaying = playing ?? !reduced;
 
   if (items.length === 0) return null;
   return (

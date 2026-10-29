@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo_Narrow, Inter, JetBrains_Mono } from "next/font/google";
 import { Nav } from "@/src/components/Nav";
+import { Footer } from "@/src/components/Footer";
 import "./globals.css";
 
 const display = Archivo_Narrow({ variable: "--nf-display", subsets: ["latin"], weight: ["500", "700"] });
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" className="flex flex-1 flex-col">
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );

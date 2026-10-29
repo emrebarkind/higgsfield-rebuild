@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MOVES, type MoveId } from "@/src/lib/moves";
+import { MOVE_GROUPS, MOVES, type MoveId } from "@/src/lib/moves";
 import { useStudio } from "@/src/lib/useStudio";
 import { MoveDiagram } from "./MoveDiagram";
 import { TakePlayer, usePrefersReducedMotion } from "./TakePlayer";
-
-const IDS = Object.keys(MOVES) as MoveId[];
 
 export function MovesLibrary() {
   const s = useStudio();
   const router = useRouter();
   const reduced = usePrefersReducedMotion();
   const [hover, setHover] = useState<MoveId | null>(null);
+  const [group, setGroup] = useState("all");
+  const ids = MOVE_GROUPS.find((g) => g.id === group)!.moves;
   const { ensureFrame } = s;
   useEffect(() => ensureFrame(), [ensureFrame]);
 
@@ -24,8 +24,22 @@ export function MovesLibrary() {
         Nine camera moves. Each diagram is the move itself, seen from above: the path the camera travels and what it frames at the start
         (dashed) and the end. The previews run on your current frame.
       </p>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {IDS.map((id) => {
+      <div role="radiogroup" aria-label="Kind of move" className="mt-5 flex flex-wrap gap-1.5">
+        {MOVE_GROUPS.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            role="radio"
+            aria-checked={group === g.id}
+            onClick={() => setGroup(g.id)}
+            className={`rounded-full border px-3 py-1 text-sm ${group === g.id ? "border-paper bg-paper text-bg" : "border-line text-muted hover:text-paper"}`}
+          >
+            {g.label} <span className="font-mono text-xs opacity-70">{g.moves.length}</span>
+          </button>
+        ))}
+      </div>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {ids.map((id) => {
           const m = MOVES[id];
           const params = { ...m.defaults, lensMm: s.base.lensMm, focus: s.base.focus };
           return (
@@ -53,7 +67,7 @@ export function MovesLibrary() {
                   s.setMove(id);
                   router.push("/");
                 }}
-                className="mt-3 rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg"
+                className="mt-3 rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg hover:bg-paper/90"
               >
                 Use this move
               </button>

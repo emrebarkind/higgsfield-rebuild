@@ -260,3 +260,12 @@ export const MOVES = Object.fromEntries(
     return [id, { id, label, plain, defaults: p, diagram: diagramFor(id, p) }];
   }),
 ) as Record<MoveId, MoveDef>;
+
+/** Moves by what the camera does, for the Moves page's chips. */
+export const MOVE_GROUPS: { id: string; label: string; moves: MoveId[] }[] = [
+  { id: 'all', label: 'All', moves: LIBRARY.map(([id]) => id) },
+  { id: 'in-out', label: 'In & out', moves: ['push-in', 'pull-back', 'dolly-zoom', 'crash-zoom'] },
+  { id: 'sideways', label: 'Sideways', moves: ['pan-left', 'pan-right', 'orbit'] },
+  { id: 'up', label: 'Up', moves: ['crane-up'] },
+  { id: 'still', label: 'Still', moves: ['static'] },
+];

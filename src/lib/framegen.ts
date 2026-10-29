@@ -4,6 +4,7 @@
 // Pollinations was the plan; it refuses browser calls without a Turnstile
 // token and rate-limits Vercel's shared IPs (DECISIONS.md, docs/spikes.md).
 import type { OutAspect } from './moves';
+import { createRateLimiter } from './ratelimit';
 
 export const SPACE = 'black-forest-labs/FLUX.1-schnell';
 export const MAX_PROMPT = 500;
@@ -91,4 +92,16 @@ export async function generateFrame(
     throw fromMessage(err instanceof Error ? err.message : String(err));
   }
   throw new FrameGenError('upstream', 'No frame came back.');
+}
+
+// Repeated clicks would spend the visitor's own free GPU quota; a light brake,
+// shared by every place that generates frames.
+export const frameLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+
+/** What to tell the visitor when a frame couldn't be generated. */
+export function describeFrameGenError(err: unknown): { message: string; detail: string } {
+  const e = err instanceof FrameGenError ? err : new FrameGenError('upstream', String(err));
+  return e.kind === 'rate-limited'
+    ? { message: 'The free GPU quota for your connection is used up for now — upload an image or try later.', detail: e.message }
+    : { message: 'Couldn’t generate that frame — try again or upload one.', detail: e.message };
 }

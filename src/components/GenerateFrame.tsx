@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import type { OutAspect } from "@/src/lib/moves";
-import { FrameGenError, generateFrame, MAX_PROMPT, validatePrompt } from "@/src/lib/framegen";
-import { createRateLimiter, createSingleFlight } from "@/src/lib/ratelimit";
+import { describeFrameGenError, frameLimiter, generateFrame, MAX_PROMPT, validatePrompt } from "@/src/lib/framegen";
+import { createSingleFlight } from "@/src/lib/ratelimit";
 import { FRAME_FILE_INPUT } from "./FrameInput";
-
-// Repeated clicks would spend the visitor's own free GPU quota; a light brake.
-const limiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
 
 type Status =
   | { kind: "idle" }
@@ -22,7 +19,7 @@ export function GenerateFrame({ aspect, onFrame, onUseSample }: { aspect: OutAsp
   const go = () => once(async () => {
     const invalid = validatePrompt(prompt);
     if (invalid) return setStatus({ kind: "error", message: invalid });
-    const slot = limiter.hit("me");
+    const slot = frameLimiter.hit("me");
     if (!slot.ok) return setStatus({ kind: "error", message: `That’s a lot of frames in a minute — try again in ${slot.retryAfterS} s.` });
     setStatus({ kind: "developing", queuePosition: null });
     try {
@@ -32,12 +29,7 @@ export function GenerateFrame({ aspect, onFrame, onUseSample }: { aspect: OutAsp
       await onFrame(blob, prompt.trim());
       setStatus({ kind: "idle" });
     } catch (err) {
-      const e = err instanceof FrameGenError ? err : new FrameGenError("upstream", String(err));
-      setStatus(
-        e.kind === "rate-limited"
-          ? { kind: "error", message: "The free GPU quota for your connection is used up for now — upload an image or try later.", detail: e.message }
-          : { kind: "error", message: "Couldn’t generate that frame — try again or upload one.", detail: e.message },
-      );
+      setStatus({ kind: "error", ...describeFrameGenError(err) });
     }
   });
 

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   MOVES,
+  MOVE_GROUPS,
   STRENGTH_CAPS,
   ease,
   fitFrame,
@@ -187,5 +188,14 @@ describe('MOVES', () => {
       expect(m.defaults.strength).toBeLessThanOrEqual(STRENGTH_CAPS[id]);
       expect(m.diagram.path.length).toBeGreaterThan(1);
     }
+  });
+});
+
+describe('MOVE_GROUPS', () => {
+  test('every move is in exactly one group, and All lists all nine', () => {
+    const grouped = MOVE_GROUPS.filter((g) => g.id !== 'all').flatMap((g) => g.moves);
+    expect([...grouped].sort()).toEqual(Object.keys(MOVES).sort());
+    expect(new Set(grouped).size).toBe(grouped.length);
+    expect(MOVE_GROUPS.find((g) => g.id === 'all')!.moves).toHaveLength(9);
   });
 });

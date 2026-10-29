@@ -82,7 +82,7 @@ export function Studio() {
   return (
     // Phones read top to bottom: preview, then frame / move / settings, then takes and samples.
     // From lg the controls sit in a left column beside preview and takes.
-    <div className="mx-auto w-full max-w-[1440px] px-4 pb-28 pt-6 sm:px-6 lg:grid lg:grid-cols-[minmax(300px,380px)_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:pb-10">
+    <div className="mx-auto w-full max-w-[1440px] px-4 pb-6 pt-6 sm:px-6 lg:grid lg:grid-cols-[minmax(300px,380px)_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:pb-10">
       <section className="lg:col-start-2 lg:row-start-1" aria-label="Preview">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
