@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NOT_SAVING, useStudio } from "@/src/lib/useStudio";
 import { usesFocus, type OutAspect } from "@/src/lib/moves";
 import { FrameInput } from "./FrameInput";
@@ -38,6 +38,18 @@ export function Studio() {
   const previewPlaying = previewPlay ?? !reduced;
   const takesPlaying = takesPlay ?? !reduced;
   const { clock, loopS } = useSyncedClock(s.takes.map((t) => t.params.durationS), takesPlaying);
+
+  // On a phone the takes land below the controls: after a press of Roll, bring them into view.
+  const takesRef = useRef<HTMLElement>(null);
+  const rolled = useRef(false);
+  // A new shot can have as many takes as the last one, so watch the shot too.
+  const rollKey = `${s.shot?.id}:${s.takes.length}`;
+  useEffect(() => {
+    if (!rolled.current || s.takes.length === 0) return;
+    rolled.current = false;
+    const el = takesRef.current;
+    if (el && el.getBoundingClientRect().top > window.innerHeight - 160) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }, [rollKey, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { ensureFrame } = s;
   useEffect(() => ensureFrame(), [ensureFrame]);
@@ -116,18 +128,27 @@ export function Studio() {
           </p>
         )}
 
-        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <div className="mx-auto flex max-w-[1440px] items-center gap-3">
             <button
               type="button"
-              onClick={() => s.roll(3)}
+              onClick={() => {
+                if (!rollDisabled && !s.rolling) rolled.current = true;
+                s.roll(3);
+              }}
               aria-disabled={rollDisabled || s.rolling || undefined}
-              className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
+              className="rounded bg-paper px-5 py-2.5 font-display text-lg font-bold uppercase tracking-wide text-bg hover:bg-paper/90 aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
               {s.rollState.label}
             </button>
             <p className="text-xs text-muted" aria-live="polite">
-              {!s.depth && s.frame ? "Waiting for depth…" : s.rollState.newShot && s.shot ? "You changed the frame, move or settings, so this starts a new shot." : ""}
+              {!s.depth && s.frame
+                ? "Waiting for depth…"
+                : s.rollState.disabled && s.shot
+                  ? "Change the frame, move or settings to roll a new shot."
+                  : s.rollState.newShot && s.shot
+                    ? "You changed the frame, move or settings, so this starts a new shot."
+                    : ""}
             </p>
           </div>
         </div>
@@ -141,7 +162,7 @@ export function Studio() {
         <ParamsPanel moveId={s.moveId} params={s.base} setParam={s.setParam} />
       </aside>
 
-      <section className="lg:col-start-2 lg:row-start-2" aria-label="Takes">
+      <section ref={takesRef} className="scroll-mt-4 lg:col-start-2 lg:row-start-2" aria-label="Takes">
         <div className="mt-8 lg:mt-6">
           <TakesGrid
             shot={s.shot}

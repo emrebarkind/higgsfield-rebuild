@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { MAX_TAKES, type Shot, type Take } from "@/src/lib/takes";
 import { STRENGTH_CAPS, type MoveParams, type OutAspect } from "@/src/lib/moves";
 import type { Frame } from "@/src/lib/frame";
@@ -52,6 +52,9 @@ export function TakesGrid(props: Props) {
           </button>
         </div>
       </div>
+      <p className="mb-2 text-xs text-muted">
+        Tap a take to export or nudge it. Circle your keeper: it stays marked in Dailies and can be printed as an AI variation.
+      </p>
       <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {takes.map((take, i) => {
           const isFocused = take.id === focusedTake;
@@ -82,7 +85,7 @@ export function TakesGrid(props: Props) {
                   type="button"
                   onClick={() => onCircle(take.id)}
                   aria-pressed={take.circled}
-                  className={`shrink-0 rounded px-2 py-0.5 font-mono text-[11px] uppercase ${
+                  className={`min-h-6 shrink-0 rounded px-2 py-1 font-mono text-[11px] uppercase ${
                     take.circled ? "bg-circle font-bold text-bg" : "border border-line text-muted hover:text-paper"
                   }`}
                 >
@@ -112,8 +115,11 @@ function FocusedTake(props: { shot: Shot; take: Take; canNudge: boolean; onNudge
   const [open, setOpen] = useState(false);
   const [p, setP] = useState(take.params);
   const cap = STRENGTH_CAPS[shot.moveId];
+  // The panel renders under the whole grid; on a phone that's off-screen.
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => panel.current?.scrollIntoView({ block: "nearest" }), []);
   return (
-    <div className="mt-4 rounded border border-line bg-panel p-4">
+    <div ref={panel} className="mt-4 scroll-mb-28 rounded border border-line bg-panel p-4 lg:scroll-mb-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Slate shot={shot.number} take={take.number} moveId={shot.moveId} lensMm={take.params.lensMm} className="text-paper" />
         <div className="flex flex-wrap items-center gap-2">
@@ -121,11 +127,15 @@ function FocusedTake(props: { shot: Shot; take: Take; canNudge: boolean; onNudge
             type="button"
             onClick={() => setOpen((o) => !o)}
             disabled={!canNudge}
-            title={canNudge ? "Tweak this take and save it as a new one" : "This shot is full"}
+            aria-expanded={open}
+            aria-describedby={`nudge-hint-${take.id}`}
             className="rounded border border-line px-3 py-1.5 text-sm hover:border-paper disabled:opacity-40"
           >
             Nudge
           </button>
+          <span id={`nudge-hint-${take.id}`} className="text-xs text-muted">
+            {canNudge ? "Tweak this take, save it as a new one" : `Shot full · ${MAX_TAKES} takes`}
+          </span>
         </div>
       </div>
       {actions && <div className="mt-3 flex flex-wrap items-center gap-3">{actions}</div>}
@@ -141,7 +151,7 @@ function FocusedTake(props: { shot: Shot; take: Take; canNudge: boolean; onNudge
                 onNudge(take.id, p);
                 setOpen(false);
               }}
-              className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg"
+              className="rounded bg-paper px-3 py-1.5 text-sm font-medium text-bg hover:bg-paper/90"
             >
               Save as take {shot.takeIds.length + 1}
             </button>

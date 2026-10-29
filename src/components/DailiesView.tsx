@@ -145,17 +145,20 @@ export function DailiesView() {
                   disabled={clearing}
                   onClick={async () => {
                     setClearing(true);
-                    await studio.clearDailies();
-                    setEntries([]);
-                    setThumbs({});
-                    setConfirming(false);
-                    setClearing(false);
+                    try {
+                      await studio.clearDailies();
+                      setEntries([]);
+                      setThumbs({});
+                      setConfirming(false);
+                    } finally {
+                      setClearing(false);
+                    }
                   }}
                   className="rounded bg-paper px-3 py-1.5 font-medium text-bg disabled:opacity-50"
                 >
                   {clearing ? "Clearing…" : "Yes, clear them"}
                 </button>
-                <button type="button" disabled={clearing} onClick={() => setConfirming(false)} className="underline hover:text-paper">
+                <button type="button" disabled={clearing} onClick={() => setConfirming(false)} className="min-h-6 px-1 py-1 underline hover:text-paper">
                   Keep them
                 </button>
               </>

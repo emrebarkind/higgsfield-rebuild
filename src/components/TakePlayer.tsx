@@ -129,7 +129,7 @@ export function TakePlayer({ recipe, playing, clock, aspect, className = "", chi
             setGeneration((g) => g + 1);
           }}
         >
-          Paused · the browser needed the graphics memory back. Tap to reload.
+          Paused · the browser needed the graphics memory back. Click or tap to reload.
         </span>
       )}
     </div>

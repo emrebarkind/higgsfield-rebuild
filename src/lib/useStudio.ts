@@ -29,7 +29,7 @@ export function rollLabel(shot: Shot | null, draft: Draft, count: number): RollS
   }
   const room = MAX_TAKES - shot!.takeIds.length;
   if (room <= 0) {
-    return { label: 'Shot is full — change something to roll a new shot', disabled: true, newShot: false, count: 0 };
+    return { label: `Shot full · ${MAX_TAKES} takes`, disabled: true, newShot: false, count: 0 };
   }
   const n = Math.min(count, room);
   return { label: `Roll ${n} more ${n === 1 ? 'take' : 'takes'}`, disabled: false, newShot: false, count: n };

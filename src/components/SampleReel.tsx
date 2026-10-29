@@ -53,7 +53,7 @@ export function SampleReel({ onUse }: { onUse: (s: Sample) => void }) {
               <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
                 Sample · {MOVES[sample.moveId].label} · {sample.params.lensMm}mm
               </p>
-              <button type="button" onClick={() => onUse(sample)} className="shrink-0 text-xs text-muted underline hover:text-paper">
+              <button type="button" onClick={() => onUse(sample)} className="min-h-6 shrink-0 px-1 py-1 text-xs text-muted underline hover:text-paper">
                 Use this
               </button>
             </div>

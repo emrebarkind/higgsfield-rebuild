@@ -35,6 +35,7 @@ export function MoveStrip({ value, onChange }: { value: MoveId; onChange: (id: M
           );
         })}
       </div>
+      <p className="mt-2 text-xs text-muted">{MOVES[hover ?? value].plain}</p>
     </fieldset>
   );
 }

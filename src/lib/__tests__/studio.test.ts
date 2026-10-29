@@ -34,7 +34,7 @@ describe('rollLabel', () => {
 
   test('a full shot with the same draft is disabled and says why', () => {
     expect(rollLabel(shotWith(6), draft, 3)).toEqual({
-      label: 'Shot is full — change something to roll a new shot',
+      label: 'Shot full · 6 takes',
       disabled: true,
       newShot: false,
       count: 0,

@@ -170,7 +170,7 @@ function FocusLayer(props: {
   const top = (box.top + focus.y * box.height) * 100;
   return (
     <div
-      className={`absolute inset-0 ${interactive ? "cursor-crosshair" : ""}`}
+      className={`absolute inset-0 focus-visible:outline-offset-[-3px] ${interactive ? "cursor-crosshair" : ""}`}
       onClick={onClick}
       onKeyDown={interactive ? onKey : undefined}
       tabIndex={interactive ? 0 : undefined}
